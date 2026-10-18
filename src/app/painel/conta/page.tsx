@@ -1,12 +1,8 @@
-import { supabase, configured } from "@/lib/supabase";
+import { store } from "@/lib/store";
 import { Logout } from "@/components/ui";
 import { AuthForm } from "@/components/auth-form";
 export default async function Page() {
-  if (!configured()) return null;
-  const db = await supabase();
-  const {
-    data: { user },
-  } = await db.auth.getUser();
+  const user = await store().user();
   return (
     <>
       <div className="page-title">

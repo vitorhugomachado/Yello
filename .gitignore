@@ -37,6 +37,9 @@ yarn-error.log*
 /playwright-report/
 /.codex-remote-attachments/
 
+# banco local (SQLite + fotos enviadas)
+/.data/
+
 # vercel
 .vercel
 

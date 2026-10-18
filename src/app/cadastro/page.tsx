@@ -1,17 +1,20 @@
-import { Brand } from "@/components/ui";
-import { AuthForm } from "@/components/auth-form";
-export default function Page() {
+import type { Metadata } from "next";
+import { SignupFlow } from "@/components/signup-flow";
+import { linkPrefix } from "@/lib/link";
+import { slugSchema } from "@/lib/validation";
+export const metadata: Metadata = { title: "Crie sua conta" };
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ link?: string }>;
+}) {
+  const { link } = await searchParams;
+  const wanted =
+    typeof link === "string" ? slugSchema.safeParse(link.trim().toLowerCase()) : null;
   return (
-    <main className="wrap">
-      <header className="topbar">
-        <Brand />
-      </header>
-      <div className="auth panel">
-        <span className="eyebrow">Seu novo endereço digital</span>
-        <h1>Vamos criar sua Yello?</h1>
-        <p>Comece pela sua conta. Depois, deixe a página com a sua cara.</p>
-        <AuthForm mode="signup" />
-      </div>
-    </main>
+    <SignupFlow
+      initialLink={wanted?.success ? wanted.data : ""}
+      prefix={linkPrefix()}
+    />
   );
 }

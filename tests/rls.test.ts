@@ -125,3 +125,9 @@ it("reorder rejects incomplete lists and reserved slugs are enforced in PostgreS
     db.query(`update profiles set slug='painel' where id='${a}'`),
   ).rejects.toThrow(/check constraint/);
 });
+it("an address already in use cannot be claimed twice", async () => {
+  await as("authenticated", b);
+  await expect(
+    db.query(`update profiles set slug='agent-a' where id='${b}'`),
+  ).rejects.toThrow(/duplicate key|unique/i);
+});

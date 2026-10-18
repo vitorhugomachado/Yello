@@ -1,21 +1,13 @@
 import Link from "next/link";
-import { supabase, configured } from "@/lib/supabase";
+import { store } from "@/lib/store";
 import { hydrate } from "@/lib/data";
-import { Property } from "@/lib/validation";
 import { PropertyList } from "@/components/property-list";
 export default async function Page() {
-  if (!configured()) return null;
-  const db = await supabase();
-  const {
-    data: { user },
-  } = await db.auth.getUser();
+  const db = store();
+  const user = await db.user();
   if (!user) return null;
-  const { data: profile } = await db
-    .from("profiles")
-    .select("slug")
-    .eq("id", user.id)
-    .maybeSingle();
-  if (!profile)
+  const slug = await db.profileSlug(user.id);
+  if (!slug)
     return (
       <div className="page-title panel">
         <h1>Primeiro, apresente-se.</h1>
@@ -25,16 +17,10 @@ export default async function Page() {
         </Link>
       </div>
     );
-  const { data, error } = await db
-    .from("properties")
-    .select("*,images(*)")
-    .eq("owner_id", user.id)
-    .order("created_at", { ascending: false });
-  if (error) throw error;
   return (
     <PropertyList
-      properties={(data as Property[]).map(hydrate)}
-      slug={profile.slug}
+      properties={(await db.properties(user.id)).map(hydrate)}
+      slug={slug}
     />
   );
 }

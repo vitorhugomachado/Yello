@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { configured, supabase } from "@/lib/supabase";
+import { dataBackend, store } from "@/lib/store";
 import { Brand, AdminNav } from "@/components/ui";
 export const dynamic = "force-dynamic";
 export default async function Layout({
@@ -8,7 +8,7 @@ export default async function Layout({
 }: {
   children: React.ReactNode;
 }) {
-  if (!configured())
+  if (!dataBackend())
     return (
       <main className="wrap">
         <header className="topbar">
@@ -17,8 +17,8 @@ export default async function Layout({
         <div className="auth panel">
           <h1>Vamos conectar sua Yello.</h1>
           <p>
-            O banco e a autenticação precisam ser configurados antes de criar
-            sua vitrine. Siga o README e preencha o arquivo .env.local.
+            Ative o banco local com YELLO_LOCAL=1 no .env.local (basta rodar
+            npm run db:init) ou configure o Supabase seguindo o README.
           </p>
           <Link className="btn primary" href="/demo">
             Explorar a demonstração
@@ -26,10 +26,7 @@ export default async function Layout({
         </div>
       </main>
     );
-  const db = await supabase();
-  const {
-    data: { user },
-  } = await db.auth.getUser();
+  const user = await store().user();
   if (!user) redirect("/login");
   return (
     <div className="admin">

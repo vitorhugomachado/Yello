@@ -1,22 +1,14 @@
 import { notFound } from "next/navigation";
-import { configured, supabase } from "@/lib/supabase";
+import { dataBackend, store } from "@/lib/store";
 import { publicProfile, hydrate, photoUrl } from "@/lib/data";
 import { PropertyDetail } from "@/components/property-detail";
-import { Property } from "@/lib/validation";
 async function load(slug: string, id: string) {
-  if (!configured()) return null;
+  if (!dataBackend()) return null;
   const profile = await publicProfile(slug);
   if (!profile) return null;
-  const db = await supabase();
-  const { data, error } = await db
-    .from("properties")
-    .select("*,images(*)")
-    .eq("id", id)
-    .eq("owner_id", profile.id)
-    .eq("status", "publicado")
-    .maybeSingle();
-  if (error || !data) return null;
-  return { profile, property: hydrate(data as Property) };
+  const data = await store().property(profile.id, id, true);
+  if (!data) return null;
+  return { profile, property: hydrate(data) };
 }
 export async function generateMetadata({
   params,

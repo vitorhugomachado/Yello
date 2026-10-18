@@ -29,7 +29,7 @@ Minimalista, confiável, contemporânea, direta e acessível. A marca deve parec
 - Família tipográfica: **Manrope**.
 - Peso preferencial: **SemiBold (600)**; avaliar **Bold (700)** apenas em formatos de destaque.
 - As letras **yell** são brancas sobre fundo preto e pretas sobre fundo claro/amarelo.
-- O **“o” é substituído por um círculo amarelo `#FFD500`**, contendo o **símbolo de casa preto** aprovado.
+- O **“o” é substituído por um círculo amarelo `#FFD500`**, contendo o **asterisco preto** aprovado.
 - Manter o desenho e as proporções do símbolo aprovado; não redesenhar o telhado ou acrescentar elos ao ícone sem nova aprovação.
 - A assinatura pode acompanhar o logotipo, mas não faz parte obrigatória de sua forma reduzida.
 

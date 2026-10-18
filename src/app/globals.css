@@ -1601,6 +1601,89 @@ svg {
   font-size: 13px;
   font-weight: 700;
 }
+/* Barra de início: o visitante já escolhe o endereço antes de criar a conta. */
+.start-link {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+.start-field {
+  flex: 1 1 190px;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 52px;
+  padding: 0 20px;
+  background: #fff;
+  border: 1px solid #dedede;
+  border-radius: 999px;
+  font-size: 14px;
+  cursor: text;
+}
+.start-prefix {
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  color: var(--brand-black);
+  white-space: nowrap;
+}
+.start-field input {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: #6b6b6b;
+}
+.start-field input:focus-visible {
+  outline: none;
+}
+.start-field:focus-within {
+  outline: 3px solid var(--brand-yellow);
+  outline-offset: 3px;
+}
+.start-field input::placeholder {
+  color: #a3a3a3;
+}
+.start-cta {
+  flex: 1 1 auto;
+  min-height: 52px;
+  padding: 0 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: var(--brand-yellow);
+  color: var(--brand-black);
+  border: 0;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.start-cta svg {
+  width: 16px;
+  height: 16px;
+}
+.start-cta:hover {
+  background: #ffe14d;
+}
+.start-hint,
+.start-error {
+  flex: 1 1 100%;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.start-hint {
+  color: #b9b9b9;
+}
+.start-error {
+  color: #ffbdbd;
+}
 .hero-aside {
   position: absolute;
   right: 0;
@@ -1878,6 +1961,16 @@ svg {
     right: -20px;
     font-size: 9px;
   }
+  .hero-intro .start-cta {
+    flex: 1 1 100%;
+    padding: 0 16px;
+    font-size: 13px;
+    gap: 8px;
+  }
+  .hero-intro .start-cta svg {
+    width: 14px;
+    height: 14px;
+  }
   .landing-story,
   .landing-steps,
   .landing-faq {
@@ -1957,8 +2050,16 @@ svg {
   .hero-intro > span {
     display: none;
   }
-  .hero-intro .landing-cta {
-    min-height: 48px;
+  .hero-intro .start-link {
+    max-width: 340px;
+    margin: 0 auto;
+  }
+  .hero-intro .start-cta {
+    font-size: 13px;
+  }
+  .start-field {
+    padding: 0 18px;
+    font-size: 13px;
   }
   .hero-product {
     position: relative;
@@ -2097,6 +2198,7 @@ svg {
   outline-color: var(--brand-yellow);
 }
 .yello-landing .landing-cta:focus-visible,
+.yello-landing .start-cta:focus-visible,
 .landing-story :focus-visible,
 .landing-faq :focus-visible,
 .landing-steps :focus-visible,
@@ -2132,3 +2234,335 @@ svg {
 /* Marca atualizada a partir das referências aprovadas enviadas. */
 .yello-brand { gap:1px; font-weight:800; letter-spacing:-1.8px; }
 .yello-brand .brand-symbol { width:.8em; height:.8em; flex-shrink:0; object-fit:contain; align-self:center; margin-top:.13em; }
+/* A barra de início só cabe em uma linha bem larga, à esquerda do celular. */
+@media (min-width: 1400px) {
+  .hero-intro .start-link {
+    width: 430px;
+  }
+  .hero-intro .start-cta {
+    flex: 0 0 auto;
+  }
+}
+/* Cadastro do corretor: uma pergunta por vez, endereço conferido ao vivo e uma
+   prévia da página — menos formulário, mais "isto já é seu". */
+.signup {
+  max-width: 560px;
+  margin: 28px auto 80px;
+}
+.signup-track {
+  height: 3px;
+  border-radius: 999px;
+  background: #e9e9e9;
+  overflow: hidden;
+}
+.signup-track span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--brand-yellow);
+  transition: width 0.4s ease;
+}
+.signup-meta {
+  margin: 14px 0 30px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  color: var(--muted);
+}
+.signup-step {
+  animation: signup-rise 0.3s ease both;
+}
+@keyframes signup-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+.signup-form {
+  display: grid;
+  /* A coluna não pode herdar o max-content dos filhos (prefixo fixo + campo),
+     senão a pílula do endereço estoura a largura em telas pequenas. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 22px;
+}
+.signup-head h1 {
+  margin: 0 0 10px;
+  font-size: clamp(30px, 6vw, 38px);
+  font-weight: 700;
+  letter-spacing: -1.6px;
+  line-height: 1.08;
+}
+.signup-sub {
+  margin: 0;
+  max-width: 46ch;
+  color: var(--muted);
+}
+/* Endereço: pílula grande com prefixo fixo e conferência no canto. */
+.signup-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+.signup-build {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 64px;
+  padding: 0 16px 0 22px;
+  background: #fff;
+  border: 1px solid #dedede;
+  border-radius: 999px;
+  cursor: text;
+  transition: border-color 0.16s;
+}
+.signup-build:focus-within {
+  border-color: var(--brand-black);
+  outline: 3px solid var(--brand-yellow);
+  outline-offset: 3px;
+}
+.signup-prefix {
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  white-space: nowrap;
+}
+.signup-build input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.4px;
+  color: var(--brand-black);
+}
+.signup-build input:focus-visible {
+  outline: none;
+}
+.signup-build input::placeholder {
+  color: #a3a3a3;
+  font-weight: 500;
+}
+.signup-mark {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+}
+.signup-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--brand-yellow);
+  animation: signup-pulse 1s ease-in-out infinite;
+}
+@keyframes signup-pulse {
+  50% {
+    opacity: 0.25;
+    transform: scale(0.75);
+  }
+}
+.signup-ok {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--brand-yellow);
+  color: var(--brand-black);
+}
+.signup-ok svg {
+  width: 13px;
+  height: 13px;
+  stroke-width: 3;
+}
+.signup-status {
+  min-height: 20px;
+  margin: 0 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.signup-status[data-state="free"] {
+  color: var(--brand-black);
+  font-weight: 600;
+}
+.signup-status[data-state="blocked"] {
+  color: #8d2b20;
+  font-weight: 600;
+}
+.signup-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.signup-options-note {
+  font-size: 13px;
+  color: var(--muted);
+}
+.signup-chip {
+  min-height: 44px;
+  padding: 0 16px;
+  background: #fff;
+  border: 1px solid #dedede;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.16s, background 0.16s;
+}
+.signup-chip:hover {
+  border-color: var(--brand-black);
+}
+/* Prévia: o visitante vê a página nascendo enquanto digita. */
+.signup-caption {
+  margin: 0 0 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.signup-preview {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  background: #fff;
+  border: 1px solid #ececec;
+  border-radius: 20px;
+  transition: border-color 0.3s;
+}
+.signup-preview[data-ready="true"] {
+  border-color: var(--brand-yellow);
+}
+.signup-face {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--brand-yellow);
+  color: var(--brand-black);
+  font-size: 18px;
+  font-weight: 800;
+}
+.signup-face img {
+  width: 30px;
+  height: 30px;
+}
+.signup-who {
+  min-width: 0;
+}
+.signup-who strong {
+  display: block;
+  letter-spacing: -0.3px;
+}
+.signup-who > span {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.signup-slug {
+  color: var(--brand-black);
+  font-weight: 600;
+}
+.signup-form .btn.primary {
+  min-height: 54px;
+  border-radius: 999px;
+  font-size: 15px;
+}
+.signup-alt {
+  margin: 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+}
+.signup-alt strong {
+  color: var(--brand-black);
+}
+/* Passo 2: endereço guardado num selo e campos leves, sem cara de ficha. */
+.signup-kept {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 12px 12px 16px;
+  background: var(--sage);
+  border-radius: 18px;
+}
+.signup-kept-link {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+}
+.signup-edit {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 8px;
+  background: none;
+  border: 0;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.signup-edit svg {
+  width: 14px;
+  height: 14px;
+}
+.signup-form .field {
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.signup-form .field input {
+  min-height: 54px;
+  border-radius: 16px;
+  border-color: #dedede;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--brand-black);
+}
+.signup-form .stack > a {
+  justify-self: center;
+  font-size: 13px;
+  color: var(--muted);
+}
+@media (max-width: 520px) {
+  .signup {
+    margin: 20px auto 64px;
+  }
+  .signup-meta {
+    margin: 12px 0 24px;
+  }
+  .signup-head h1 {
+    font-size: 29px;
+  }
+  .signup-build {
+    min-height: 60px;
+    padding: 0 12px 0 18px;
+  }
+  .signup-build input {
+    font-size: 16px;
+  }
+  .signup-prefix {
+    font-size: 13px;
+  }
+  .signup-preview {
+    padding: 12px 14px;
+  }
+}

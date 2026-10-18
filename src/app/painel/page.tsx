@@ -1,18 +1,18 @@
-import { supabase, configured } from "@/lib/supabase";
+import { store } from "@/lib/store";
 import { ProfileEditor } from "@/components/profile-editor";
 import { Profile } from "@/lib/validation";
 export default async function Page() {
-  if (!configured()) return null;
-  const db = await supabase();
-  const {
-    data: { user },
-  } = await db.auth.getUser();
+  const db = store();
+  const user = await db.user();
   if (!user) return null;
-  const { data, error } = await db
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .maybeSingle();
-  if (error) throw error;
-  return <ProfileEditor initial={data as Profile | null} userId={user.id} />;
+  const data = await db.profile(user.id);
+  const suggested =
+    typeof user.metadata?.link === "string" ? user.metadata.link : "";
+  return (
+    <ProfileEditor
+      initial={data as Profile | null}
+      userId={user.id}
+      suggestedSlug={suggested}
+    />
+  );
 }

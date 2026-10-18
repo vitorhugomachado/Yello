@@ -8,25 +8,29 @@ import { Storefront } from "./storefront";
 export function ProfileEditor({
   initial,
   userId,
+  suggestedSlug = "",
 }: {
   initial: Profile | null;
   userId: string;
+  suggestedSlug?: string;
 }) {
   const [p, setP] = useState<Profile>(
-    initial || {
-      id: userId,
-      slug: "",
-      name: "",
-      bio: "",
-      city: "",
-      region: "",
-      registration: "",
-      whatsapp: "",
-      theme: "forest",
-      socials: [],
-      avatar: "",
-      cover: "",
-    },
+    initial
+      ? { ...initial, slug: initial.slug || suggestedSlug }
+      : {
+          id: userId,
+          slug: suggestedSlug,
+          name: "",
+          bio: "",
+          city: "",
+          region: "",
+          registration: "",
+          whatsapp: "",
+          theme: "forest",
+          socials: [],
+          avatar: "",
+          cover: "",
+        },
   );
   const [busy, setBusy] = useState(false),
     [message, setMessage] = useState(""),

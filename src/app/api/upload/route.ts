@@ -1,18 +1,19 @@
-import { supabase, configured } from "@/lib/supabase";
+import { dataBackend, store } from "@/lib/store";
 import { optimizeImage } from "@/lib/images";
 export const runtime = "nodejs";
 export async function POST(req: Request) {
-  if (!configured())
+  if (!dataBackend())
     return Response.json(
-      { error: "Supabase não configurado." },
+      {
+        error:
+          "Ative o banco local (YELLO_LOCAL=1) ou configure o Supabase para enviar fotos.",
+      },
       { status: 503 },
     );
   if (req.headers.get("origin") !== new URL(req.url).origin)
     return Response.json({ error: "Origem inválida" }, { status: 403 });
-  const db = await supabase();
-  const {
-    data: { user },
-  } = await db.auth.getUser();
+  const db = store();
+  const user = await db.user();
   if (!user)
     return Response.json({ error: "Sessão expirada." }, { status: 401 });
   try {
@@ -29,43 +30,37 @@ export async function POST(req: Request) {
       throw Error("Envie JPG, PNG ou WebP, até 10 MB.");
     let position = 0;
     if (property) {
-      const { data } = await db
-        .from("properties")
-        .select("id")
-        .eq("id", property)
-        .eq("owner_id", user.id)
-        .single();
-      if (!data) throw Error("Imóvel não encontrado.");
-      const { data: photos } = await db
-        .from("images")
-        .select("position")
-        .eq("property_id", property);
-      if ((photos?.length || 0) >= 30)
+      if (!(await db.ownsProperty(user.id, property)))
+        throw Error("Imóvel não encontrado.");
+      if ((await db.imageCount(user.id, property)) >= 30)
         throw Error("Limite de 30 fotos por imóvel.");
-      position = Math.max(-1, ...(photos || []).map((p) => p.position)) + 1;
+      position = await db.nextPosition(property);
     }
     const buffer = await optimizeImage(
       Buffer.from(await file.arrayBuffer()),
       file.type,
     );
     const path = `${user.id}/${property || "profile"}/${crypto.randomUUID()}.webp`;
-    const { error } = await db.storage
-      .from("media")
-      .upload(path, buffer, { contentType: "image/webp" });
-    if (error) throw error;
+    await db.upload(path, buffer);
     if (property) {
-      const { data, error: insertError } = await db
-        .from("images")
-        .insert({ property_id: property, owner_id: user.id, path, position })
-        .select("*")
-        .single();
-      if (insertError) {
-        await db.storage.from("media").remove([path]);
+      try {
+        const photo = await db.addImage({
+          owner: user.id,
+          property,
+          path,
+          position,
+        });
+        return Response.json({
+          data: {
+            ...photo,
+            url: `/api/media?path=${encodeURIComponent(path)}`,
+          },
+        });
+      } catch (insertError) {
+        /* Não deixamos arquivo órfão se a linha não entrou. */
+        await db.removeFiles([path]);
         throw insertError;
       }
-      return Response.json({
-        data: { ...data, url: `/api/media?path=${encodeURIComponent(path)}` },
-      });
     }
     return Response.json({ data: { path } });
   } catch (e) {

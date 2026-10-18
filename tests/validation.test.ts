@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
 import {
+  linkName,
+  linkProblem,
+  linkSuggestions,
+  slugify,
+} from "../src/lib/link";
+import {
   slugSchema,
   phoneSchema,
   socialSchema,
@@ -19,6 +25,48 @@ describe("Public identifiers and contacts", () => {
     ])
       expect(slugSchema.safeParse(s).success).toBe(false);
     expect(slugSchema.parse("marina-oliveira")).toBe("marina-oliveira");
+  });
+  it("turns typed names into addresses and explains what is wrong", () => {
+    expect(slugify("Imóveis da Marina")).toBe("imoveis-da-marina");
+    expect(slugify("  Marina Oliveira! ")).toBe("marina-oliveira");
+    expect(linkProblem("painel")).toContain("reservado");
+    for (const value of [
+      "Marina Oliveira",
+      "painel",
+      "a",
+      "ab",
+      "@@@",
+      "9lives",
+      "ÁÉ-Í",
+      "a".repeat(41),
+      "imóveis.link",
+    ]) {
+      const slug = slugify(value);
+      expect(Boolean(linkProblem(slug))).toBe(
+        !slugSchema.safeParse(slug).success,
+      );
+    }
+  });
+  it("derives a readable name from the address for the signup preview", () => {
+    expect(linkName("marina-oliveira")).toBe("Marina Oliveira");
+    expect(linkName("marina-de-oliveira")).toBe("Marina de Oliveira");
+    expect(linkName("marina-oliveira-imoveis")).toBe(
+      "Marina Oliveira Imóveis",
+    );
+    expect(linkName("sao-jose")).toBe("São José");
+    expect(linkName("")).toBe("");
+  });
+  it("suggests close alternatives that already respect the slug rules", () => {
+    const options = linkSuggestions("marina-oliveira");
+    expect(options).toContain("marina-oliveira-imoveis");
+    expect(new Set(options).size).toBe(options.length);
+    for (const option of options) {
+      expect(option).not.toBe("marina-oliveira");
+      expect(linkProblem(option)).toBe("");
+      expect(slugSchema.safeParse(option).success).toBe(true);
+    }
+    for (const option of linkSuggestions("a".repeat(40)))
+      expect(option.length).toBeLessThanOrEqual(40);
   });
   it("normalizes country prefix and rejects short numbers", () => {
     expect(phoneSchema.parse("+55 (11) 99999-9999")).toBe("5511999999999");

@@ -5,12 +5,18 @@ import { useRouter } from "next/navigation";
 import { api } from "./ui";
 export function AuthForm({
   mode,
+  link = "",
+  token = "",
 }: {
   mode: "login" | "signup" | "recover" | "reset";
+  link?: string;
+  /** Vem do link de recuperação no modo local (/redefinir?token=...). */
+  token?: string;
 }) {
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
-    [message, setMessage] = useState("");
+    [message, setMessage] = useState(""),
+    [reset, setReset] = useState("");
   const router = useRouter();
   return (
     <form
@@ -19,22 +25,29 @@ export function AuthForm({
         e.preventDefault();
         setBusy(true);
         setError("");
+        setMessage("");
+        setReset("");
         const form = new FormData(e.currentTarget);
         try {
-          await api("/api/auth", {
+          const out = (await api("/api/auth", {
             action: mode,
             email: form.get("email"),
             password: form.get("password"),
-          });
-          if (mode === "login" || mode === "reset") {
-            router.push("/painel");
+            link,
+            token,
+          })) as { next?: string; message?: string; link?: string };
+          if (out.next) {
+            router.push(out.next);
             router.refresh();
-          } else
+          } else {
             setMessage(
-              mode === "signup"
-                ? "Confira seu e-mail para confirmar o cadastro e abrir sua página."
-                : "Se este e-mail estiver cadastrado, enviaremos um link para redefinir sua senha.",
+              out.message ||
+                (mode === "signup"
+                  ? "Confira seu e-mail para confirmar o cadastro e abrir sua página."
+                  : "Se este e-mail estiver cadastrado, enviaremos um link para redefinir sua senha."),
             );
+            setReset(out.link || "");
+          }
         } catch (e) {
           setError((e as Error).message);
         } finally {
@@ -82,6 +95,11 @@ export function AuthForm({
       {message && (
         <div className="notice" role="status">
           {message}
+        </div>
+      )}
+      {reset && (
+        <div className="notice" role="status">
+          <Link href={reset}>Criar uma nova senha agora</Link>
         </div>
       )}
       <button className="btn primary" disabled={busy}>

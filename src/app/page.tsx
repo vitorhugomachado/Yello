@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { SiInstagram, SiWhatsapp } from "@icons-pack/react-simple-icons";
 import { Brand } from "@/components/ui";
+import { StartLink } from "@/components/start-link";
 
 export default function Home() {
   return (
@@ -123,9 +124,7 @@ export default function Home() {
                 <br />
                 Tudo junto. Do seu jeito.
               </span>
-              <Link className="landing-cta" href="/cadastro">
-                Criar meu link <ArrowUpRight />
-              </Link>
+              <StartLink />
             </div>
             <div className="hero-aside">
               <span className="aside-number">

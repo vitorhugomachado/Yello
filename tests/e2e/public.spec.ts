@@ -77,6 +77,14 @@ test("unauthenticated API mutations are refused", async ({ request }) => {
 test("auth form and 360px layout", async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 780 });
   await page.goto("/cadastro");
+  await expect(page.getByPlaceholder("seunome")).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await page.getByPlaceholder("seunome").fill("espaco-360");
+  await page.getByRole("button", { name: "Continuar" }).click();
   await expect(page.getByLabel("E-mail")).toBeVisible();
   await expect(page.getByLabel("Senha", { exact: true })).toBeVisible();
   expect(
