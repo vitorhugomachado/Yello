@@ -1,0 +1,101 @@
+import { Profile, Property } from "./validation";
+const photo = (id: string) =>
+  `https://images.unsplash.com/${id}?auto=format&fit=crop&w=1200&q=80`;
+export const demoProfile: Profile = {
+  id: "demo",
+  slug: "demo",
+  name: "Marina Oliveira",
+  bio: "Mais do que imóveis, novos começos. Encontre um lugar para chamar de seu, com cuidado em cada detalhe.",
+  city: "Florianópolis, SC",
+  region: "Florianópolis e região",
+  registration: "Perfil demonstrativo · CRECI fictício",
+  whatsapp: "",
+  theme: "forest",
+  socials: [
+    { name: "Instagram", url: "https://www.instagram.com/" },
+    { name: "Facebook", url: "https://www.facebook.com/" },
+    { name: "YouTube", url: "https://www.youtube.com/" },
+  ],
+  avatar: photo("photo-1580489944761-15a19d654956"),
+  cover: photo("photo-1449844908441-8829872d2607"),
+};
+const scenes = [
+  "photo-1600210492486-724fe5c67fb0",
+  "photo-1600607687920-4e2a09cf159d",
+  "photo-1600047509807-ba8f99d2cdde",
+  "photo-1600566753086-00f18fb6b3ea",
+];
+export const demoProperties: Property[] = [
+  {
+    id: "apto-jardim",
+    owner_id: "demo",
+    title: "Luz natural e uma vista para ficar",
+    description:
+      "Um apartamento acolhedor, com ambientes integrados e luz natural em todos os cantos. Varanda para aproveitar o fim da tarde e uma localização que deixa a rotina mais leve.\n\nEste imóvel é fictício e faz parte da demonstração da Yello. As fotos são ilustrativas.",
+    purpose: "venda",
+    type: "apartamento",
+    price: 890000,
+    neighborhood: "Jardim Atlântico",
+    city: "Florianópolis",
+    state: "SC",
+    area: 98,
+    bedrooms: 3,
+    bathrooms: 2,
+    parking: 2,
+    status: "publicado",
+    images: scenes.map((s, i) => ({
+      id: s,
+      path: "",
+      position: i,
+      url: photo(s),
+    })),
+  },
+  {
+    id: "casa-campeche",
+    owner_id: "demo",
+    title: "Seu refúgio pertinho do mar",
+    description:
+      "Casa demonstrativa com jardim, ambientes amplos e espaço para receber. Fotos ilustrativas; não é uma oferta real.",
+    purpose: "venda",
+    type: "casa",
+    price: 1450000,
+    neighborhood: "Campeche",
+    city: "Florianópolis",
+    state: "SC",
+    area: 185,
+    bedrooms: 3,
+    bathrooms: 3,
+    parking: 2,
+    status: "publicado",
+    images: [scenes[2], scenes[1]].map((s, i) => ({
+      id: s,
+      path: "",
+      position: i,
+      url: photo(s),
+    })),
+  },
+  {
+    id: "studio-centro",
+    owner_id: "demo",
+    title: "Praticidade com um toque de aconchego",
+    description:
+      "Apartamento demonstrativo próximo de tudo, com espaços bem aproveitados e acabamentos acolhedores. Fotos ilustrativas.",
+    purpose: "aluguel",
+    type: "apartamento",
+    price: 3200,
+    neighborhood: "Centro",
+    city: "Florianópolis",
+    state: "SC",
+    area: 52,
+    bedrooms: 1,
+    bathrooms: 1,
+    parking: 1,
+    status: "publicado",
+    images: [scenes[3], scenes[0]].map((s, i) => ({
+      id: s,
+      path: "",
+      position: i,
+      url: photo(s),
+    })),
+  },
+];
