@@ -1,9 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { Check, Pencil, X } from "lucide-react";
+import { Check, Pencil } from "lucide-react";
 import { AuthForm } from "./auth-form";
-import { Brand } from "./ui";
+import { AuthCard } from "./auth-card";
 import {
   LinkAnswer,
   linkName,
@@ -78,18 +77,17 @@ export function SignupFlow({
   const [draft, setDraft] = useState(initialLink);
   const slug = slugify(draft);
   return (
-    <main className="wrap">
-      <header className="topbar">
-        <Brand />
-        <Link
-          className="btn icon"
-          href="/"
-          aria-label="Fechar e voltar para a página inicial"
-        >
-          <X aria-hidden="true" />
-        </Link>
-      </header>
-      <div className="auth signup">
+    <AuthCard
+      side="signup"
+      title={step === "link" ? "Sua vitrine começa aqui." : "Quase tudo pronto."}
+      text={
+        step === "link"
+          ? "Escolha o endereço da sua página e crie o acesso: leva menos de um minuto."
+          : "Só falta criar seu acesso para a página entrar no ar."
+      }
+      action={{ href: "/login", label: "Já tenho conta" }}
+    >
+      <div className="signup">
         <div className="signup-track" aria-hidden="true">
           <span style={{ width: step === "link" ? "50%" : "100%" }} />
         </div>
@@ -116,7 +114,7 @@ export function SignupFlow({
           )}
         </div>
       </div>
-    </main>
+    </AuthCard>
   );
 }
 /* Prévia da página: o endereço digitado já aparece com nome e avatar. */
@@ -306,12 +304,6 @@ function LinkStep({
       <button className="btn primary" disabled={busy}>
         {busy ? "Aguarde…" : "Continuar"}
       </button>
-      <p className="signup-alt">
-        Já tem uma conta?{" "}
-        <Link href="/login">
-          <strong>Entrar</strong>
-        </Link>
-      </p>
     </form>
   );
 }

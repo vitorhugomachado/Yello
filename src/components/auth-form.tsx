@@ -2,7 +2,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { api } from "./ui";
+/* Os campos levam ícone e botão de mostrar senha quando o formulário está no
+   cartão de acesso; fora dele (painel), o invólucro some e fica o campo de
+   sempre. Os rótulos são os mesmos em qualquer contexto. */
 export function AuthForm({
   mode,
   link = "",
@@ -16,6 +20,7 @@ export function AuthForm({
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [message, setMessage] = useState(""),
+    [show, setShow] = useState(false),
     [reset, setReset] = useState("");
   const router = useRouter();
   return (
@@ -58,13 +63,18 @@ export function AuthForm({
       {mode !== "reset" && (
         <label className="field">
           E-mail
-          <input
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
-            placeholder="voce@exemplo.com"
-          />
+          <span className="field-control">
+            <span className="field-icon" aria-hidden="true">
+              <Mail />
+            </span>
+            <input
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              placeholder="voce@exemplo.com"
+            />
+          </span>
         </label>
       )}
       {mode !== "recover" && (
@@ -72,18 +82,32 @@ export function AuthForm({
           <label htmlFor="password">
             {mode === "reset" ? "Nova senha" : "Senha"}
           </label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            minLength={8}
-            maxLength={128}
-            autoComplete={
-              mode === "login" ? "current-password" : "new-password"
-            }
-            aria-describedby="password-hint"
-            required
-          />
+          <span className="field-control">
+            <span className="field-icon" aria-hidden="true">
+              <Lock />
+            </span>
+            <input
+              id="password"
+              name="password"
+              type={show ? "text" : "password"}
+              minLength={8}
+              maxLength={128}
+              autoComplete={
+                mode === "login" ? "current-password" : "new-password"
+              }
+              aria-describedby="password-hint"
+              required
+            />
+            <button
+              type="button"
+              className="field-eye"
+              aria-label={show ? "Ocultar senha" : "Mostrar senha"}
+              aria-pressed={show}
+              onClick={() => setShow((visible) => !visible)}
+            >
+              {show ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
+            </button>
+          </span>
           <small id="password-hint">Pelo menos 8 caracteres.</small>
         </div>
       )}
@@ -112,17 +136,8 @@ export function AuthForm({
               reset: "Salvar nova senha",
             }[mode]}
       </button>
-      {mode === "login" && (
-        <>
-          <Link href="/recuperar">Esqueci minha senha</Link>
-          <p>
-            Ainda não tem uma conta?{" "}
-            <Link href="/cadastro">
-              <strong>Comece aqui</strong>
-            </Link>
-          </p>
-        </>
-      )}
+      {/* No cartão de acesso o caminho para o cadastro vive no painel preto. */}
+      {mode === "login" && <Link href="/recuperar">Esqueci minha senha</Link>}
       {mode !== "login" && <Link href="/login">Voltar para entrar</Link>}
     </form>
   );

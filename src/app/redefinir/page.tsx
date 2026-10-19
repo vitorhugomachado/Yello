@@ -1,4 +1,4 @@
-import { Brand } from "@/components/ui";
+import { AuthCard } from "@/components/auth-card";
 import { AuthForm } from "@/components/auth-form";
 export default async function Page({
   searchParams,
@@ -7,14 +7,17 @@ export default async function Page({
 }) {
   const { token } = await searchParams;
   return (
-    <main className="wrap">
-      <header className="topbar">
-        <Brand />
-      </header>
-      <div className="auth panel">
+    <AuthCard
+      side="login"
+      title="Quase de volta."
+      text="Escolha uma senha nova e retome o cuidado com a sua página."
+      action={{ href: "/login", label: "Voltar ao login" }}
+    >
+      <header className="auth-head">
         <h1>Sua nova senha</h1>
-        <AuthForm mode="reset" token={token} />
-      </div>
-    </main>
+        <p>Você escolhe; nós guardamos com segurança.</p>
+      </header>
+      <AuthForm mode="reset" token={token} />
+    </AuthCard>
   );
 }

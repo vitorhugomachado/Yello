@@ -1,7 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "./tests/e2e",
-  use: { baseURL: "http://localhost:3000" },
+  /* Movimento reduzido desliga as ondas em WebGL e as transições: a suíte fica
+     leve e sem depender de animação. */
+  use: { baseURL: "http://localhost:3000", reducedMotion: "reduce" },
   projects: [
     {
       name: "mobile",

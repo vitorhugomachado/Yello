@@ -1,16 +1,18 @@
-import { Brand } from "@/components/ui";
+import { AuthCard } from "@/components/auth-card";
 import { AuthForm } from "@/components/auth-form";
 export default function Page() {
   return (
-    <main className="wrap">
-      <header className="topbar">
-        <Brand />
-      </header>
-      <div className="auth panel">
+    <AuthCard
+      side="login"
+      title="Aconteceu alguma coisa?"
+      text="Sem susto: enviamos um link para você criar uma senha nova."
+      action={{ href: "/login", label: "Voltar ao login" }}
+    >
+      <header className="auth-head">
         <h1>Recuperar acesso</h1>
-        <p>Enviaremos um link para o seu e-mail.</p>
-        <AuthForm mode="recover" />
-      </div>
-    </main>
+        <p>Informe o e-mail da sua conta.</p>
+      </header>
+      <AuthForm mode="recover" />
+    </AuthCard>
   );
 }
