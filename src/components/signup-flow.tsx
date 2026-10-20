@@ -75,6 +75,13 @@ export function SignupFlow({
 }) {
   const [step, setStep] = useState<"link" | "account">("link");
   const [draft, setDraft] = useState(initialLink);
+  /* A subida do passo é só da troca de etapa: a chegada na tela já é animada
+     pela transição entre as páginas. */
+  const [animar, setAnimar] = useState(false);
+  const trocar = (proximo: "link" | "account") => {
+    setAnimar(true);
+    setStep(proximo);
+  };
   const slug = slugify(draft);
   return (
     <AuthCard
@@ -97,19 +104,23 @@ export function SignupFlow({
             : "Passo 2 de 2 · crie seu acesso"}
         </p>
         {/* A chave reinicia a animação curta a cada troca de etapa. */}
-        <div className="signup-step" key={step}>
+        <div
+          className="signup-step"
+          key={step}
+          data-anim={animar ? "true" : undefined}
+        >
           {step === "link" ? (
             <LinkStep
               value={draft}
               onChange={setDraft}
               prefix={prefix}
-              onDone={() => setStep("account")}
+              onDone={() => trocar("account")}
             />
           ) : (
             <AccountStep
               slug={slug}
               prefix={prefix}
-              onEdit={() => setStep("link")}
+              onEdit={() => trocar("link")}
             />
           )}
         </div>

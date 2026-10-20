@@ -2269,7 +2269,10 @@ svg {
   letter-spacing: 0.2px;
   color: var(--muted);
 }
-.signup-step {
+/* A subida do passo só roda quando a pessoa troca de etapa. Ao chegar na
+   tela por navegação o conteúdo já nasce no lugar: a transição entre as
+   telas cuida do movimento, sem um segundo quadro de entrada. */
+.signup-step[data-anim="true"] {
   animation: signup-rise 0.3s ease both;
 }
 @keyframes signup-rise {
@@ -2602,7 +2605,6 @@ svg {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: 1fr 1fr;
   width: min(960px, 100%);
   min-height: 592px;
   background: var(--neutral-white);
@@ -2610,6 +2612,11 @@ svg {
   border-radius: 32px;
   box-shadow: 0 26px 90px rgb(20 18 10 / 16%);
   overflow: hidden;
+}
+.auth-card-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-width: 0;
 }
 .auth-card-panel {
   grid-area: 1 / 1;
@@ -2625,17 +2632,6 @@ svg {
   background: var(--brand-black);
   border-radius: 24px;
   overflow: hidden;
-  animation: auth-panel-left 0.75s cubic-bezier(0.62, 0.04, 0.3, 1) both;
-}
-@keyframes auth-panel-left {
-  from {
-    translate: 100% 0;
-  }
-}
-@keyframes auth-panel-right {
-  from {
-    translate: -100% 0;
-  }
 }
 .auth-card-waves {
   position: absolute;
@@ -2659,7 +2655,6 @@ svg {
   font-weight: 700;
   letter-spacing: -1.2px;
   line-height: 1.08;
-  animation: auth-swap 0.4s ease both;
 }
 .auth-card-panel p {
   margin: 0;
@@ -2667,12 +2662,6 @@ svg {
   font-size: 15px;
   line-height: 1.5;
   color: rgb(255 255 255 / 72%);
-}
-@keyframes auth-swap {
-  from {
-    opacity: 0;
-    translate: 0 8px;
-  }
 }
 .auth-switch {
   display: inline-flex;
@@ -2871,7 +2860,6 @@ svg {
 @media (min-width: 821px) {
   .auth-card[data-side="login"] .auth-card-panel {
     grid-column: 2;
-    animation-name: auth-panel-right;
   }
   .auth-card[data-side="login"] .auth-card-body {
     grid-column: 1;
@@ -2892,10 +2880,12 @@ svg {
     padding: 18px 12px 28px;
   }
   .auth-card {
-    grid-template-columns: 1fr;
     min-height: 0;
     border-radius: 26px;
     border-width: 6px;
+  }
+  .auth-card-inner {
+    grid-template-columns: 1fr;
   }
   .auth-card-panel {
     grid-area: 1 / 1;
@@ -2925,5 +2915,59 @@ svg {
   .auth-card-body {
     grid-area: 2 / 1;
     padding: 26px 20px 30px;
+  }
+}
+
+/* Travessia entre entrar e criar conta: o painel desliza de um lado ao outro
+   do cartão e o conteúdo de cada metade cruza em fade por baixo dele. O miolo
+   do cartão tem nome fixo, então o formulário antigo continua visível e some
+   aos poucos enquanto o painel chega; o novo aparece no lado que ele descobre.
+   O fundo, a moldura e o cartão são iguais nos dois estados e ficam parados. */
+::view-transition {
+  pointer-events: none;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 380ms;
+}
+::view-transition-group(acesso-conteudo) {
+  animation-duration: 420ms;
+}
+::view-transition-old(acesso-conteudo),
+::view-transition-new(acesso-conteudo) {
+  animation-duration: 380ms;
+}
+::view-transition-group(acesso-painel) {
+  z-index: 3;
+  animation-duration: 420ms;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+::view-transition-old(acesso-painel),
+::view-transition-new(acesso-painel) {
+  animation-duration: 300ms;
+}
+@media (min-width: 821px) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 440ms;
+  }
+  ::view-transition-old(acesso-conteudo),
+  ::view-transition-new(acesso-conteudo) {
+    animation-duration: 440ms;
+  }
+  ::view-transition-group(acesso-conteudo) {
+    animation-duration: 440ms;
+  }
+  ::view-transition-group(acesso-painel) {
+    animation-duration: 440ms;
+  }
+}
+/* Sem movimento: a troca acontece de uma vez. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
   }
 }

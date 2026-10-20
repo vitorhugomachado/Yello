@@ -16,6 +16,43 @@ test("login card keeps the way into signup", async ({ page }) => {
     page.getByRole("link", { name: "Esqueci minha senha" }),
   ).toHaveAttribute("href", "/recuperar");
 });
+/* A troca entre entrar e criar conta é uma transição de página, não um
+   recarregamento: o cartão não anda e nenhuma tela de carregamento passa no
+   meio. */
+test("switching between login and signup keeps the page in place", async ({
+  page,
+}) => {
+  await page.goto("/login");
+  const antes = await page.locator(".auth-card").boundingBox();
+  await page.evaluate(() => {
+    const janela = window as unknown as { piscou?: boolean };
+    janela.piscou = false;
+    new MutationObserver(() => {
+      if (document.body.innerText.includes("Preparando sua Yello")) {
+        janela.piscou = true;
+      }
+    }).observe(document.body, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
+  });
+  await page.getByRole("link", { name: "Criar minha conta" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Sua vitrine começa aqui." }),
+  ).toBeVisible();
+  const depois = await page.locator(".auth-card").boundingBox();
+  expect(Math.abs((depois?.x ?? 0) - (antes?.x ?? 0))).toBeLessThan(1);
+  expect(Math.abs((depois?.width ?? 0) - (antes?.width ?? 0))).toBeLessThan(1);
+  expect(
+    await page.evaluate(() => (window as unknown as { piscou?: boolean }).piscou),
+  ).toBe(false);
+  expect(
+    await page.evaluate(
+      () => performance.getEntriesByType("navigation").length,
+    ),
+  ).toBe(1);
+});
 test("password can be revealed and hidden again", async ({ page }) => {
   await page.goto("/login");
   const password = page.getByLabel("Senha", { exact: true });
