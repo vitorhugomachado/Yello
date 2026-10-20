@@ -4,7 +4,7 @@ import { AuthForm } from "@/components/auth-form";
 export default async function Page() {
   const user = await store().user();
   return (
-    <>
+    <div className="narrow">
       <div className="page-title">
         <h1>Minha conta</h1>
         <p>Seu acesso, com segurança.</p>
@@ -22,6 +22,6 @@ export default async function Page() {
         </section>
         <p className="muted">Yello MVP · Sem cobrança nesta etapa.</p>
       </div>
-    </>
+    </div>
   );
 }

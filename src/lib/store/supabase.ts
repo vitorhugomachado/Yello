@@ -82,6 +82,23 @@ export function store(): Store {
       if (error) throw error;
     },
 
+    async setOnboarding(state) {
+      const db = await supabase();
+      const {
+        data: { user },
+      } = await db.auth.getUser();
+      if (!user) throw Error("Entre novamente para continuar.");
+      const previous = user.user_metadata?.onboarding;
+      const onboarding =
+        previous && typeof previous === "object" && !Array.isArray(previous)
+          ? (previous as Record<string, unknown>)
+          : {};
+      const { error } = await db.auth.updateUser({
+        data: { onboarding: { ...onboarding, ...state } },
+      });
+      if (error) throw error;
+    },
+
     async profile(id) {
       const db = await supabase();
       return await rows<Profile>(

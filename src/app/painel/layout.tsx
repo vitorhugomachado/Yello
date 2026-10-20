@@ -1,8 +1,13 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { dataBackend, store } from "@/lib/store";
-import { Brand, AdminNav } from "@/components/ui";
+import { Brand } from "@/components/ui";
+
 export const dynamic = "force-dynamic";
+
+/* Só a sessão e o ambiente. O chrome do painel (topbar e navegação) vive no
+   route group (app), para que boas-vindas e prévia possam ocupar a tela toda
+   sem perder a proteção de acesso. */
 export default async function Layout({
   children,
 }: {
@@ -28,14 +33,5 @@ export default async function Layout({
     );
   const user = await store().user();
   if (!user) redirect("/login");
-  return (
-    <div className="admin">
-      <header className="wrap topbar">
-        <Brand />
-        <span className="pill">Seu espaço</span>
-      </header>
-      <main className="wrap narrow">{children}</main>
-      <AdminNav />
-    </div>
-  );
+  return children;
 }

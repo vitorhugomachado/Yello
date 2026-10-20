@@ -67,11 +67,14 @@ export function Storefront({
   properties,
   demo = false,
   preview = false,
+  examples = false,
 }: {
   profile: Profile;
   properties: Property[];
   demo?: boolean;
   preview?: boolean;
+  /** Prévia sem dados reais: exemplos marcados, sem links nem favoritos. */
+  examples?: boolean;
 }) {
   const [purpose, setPurpose] = useState("todos"),
     [type, setType] = useState("todos"),
@@ -116,7 +119,9 @@ export function Storefront({
     setTimeout(() => setToast(""), 2500);
   }
   const media = (s: string) =>
-    s.startsWith("https://") ? s : `/api/media?path=${encodeURIComponent(s)}`;
+    s.startsWith("https://") || (s.startsWith("/") && !s.startsWith("//"))
+      ? s
+      : `/api/media?path=${encodeURIComponent(s)}`;
   return (
     <div className={`storefront theme-${profile.theme}`}>
       {demo && (
@@ -146,46 +151,71 @@ export function Storefront({
           <p className="profile-region">
             Corretor de imóveis · {profile.region || profile.city}
           </p>
-          <div className="socials">
-            {profile.whatsapp && (
-              <a
-                href={whatsappUrl(profile.whatsapp)}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="WhatsApp"
-                title="WhatsApp"
-              >
+          {examples ? (
+            <div className="socials socials-example" aria-hidden="true">
+              <span>
                 <MessageCircle />
-              </a>
-            )}
-            {profile.socials
-              .filter((s) => socialSchema.safeParse(s).success)
-              .map((s, i) => {
-                const Icon = icons[s.name];
-                return (
-                  <a
-                    key={i}
-                    href={s.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={s.name}
-                    title={
-                      demo
-                        ? `${s.name} · link ilustrativo para a plataforma`
-                        : s.name
-                    }
-                  >
-                    <Icon />
-                  </a>
-                );
-              })}
-          </div>
-          {(profile.bio || profile.registration) && (
-            <details className="profile-about">
-              <summary>Sobre {profile.name.split(" ")[0]}</summary>
-              <p>{profile.bio}</p>
-              <small>{profile.registration}</small>
+              </span>
+              <span>
+                <SiInstagram />
+              </span>
+              <span>
+                <Globe />
+              </span>
+            </div>
+          ) : (
+            <div className="socials">
+              {profile.whatsapp && (
+                <a
+                  href={whatsappUrl(profile.whatsapp)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="WhatsApp"
+                  title="WhatsApp"
+                >
+                  <MessageCircle />
+                </a>
+              )}
+              {profile.socials
+                .filter((s) => socialSchema.safeParse(s).success)
+                .map((s, i) => {
+                  const Icon = icons[s.name];
+                  return (
+                    <a
+                      key={i}
+                      href={s.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={s.name}
+                      title={
+                        demo
+                          ? `${s.name} · link ilustrativo para a plataforma`
+                          : s.name
+                      }
+                    >
+                      <Icon />
+                    </a>
+                  );
+                })}
+            </div>
+          )}
+          {examples ? (
+            <details className="profile-about profile-about-example" open>
+              <summary>Sobre você</summary>
+              <p>
+                Conte como você ajuda a encontrar o lugar certo. Sua bio aparece
+                aqui.
+              </p>
+              <small>Texto de exemplo — não publicado.</small>
             </details>
+          ) : (
+            (profile.bio || profile.registration) && (
+              <details className="profile-about">
+                <summary>Sobre {profile.name.split(" ")[0]}</summary>
+                <p>{profile.bio}</p>
+                <small>{profile.registration}</small>
+              </details>
+            )
           )}
         </section>
         <section className="collection">
@@ -218,62 +248,97 @@ export function Storefront({
           </div>
           <div className="collection-meta">
             <span>
-              {items.length} {items.length === 1 ? "imóvel" : "imóveis"}
+              {examples
+                ? `${items.length} ${items.length === 1 ? "exemplo" : "exemplos"}`
+                : `${items.length} ${items.length === 1 ? "imóvel" : "imóveis"}`}
             </span>
-            <button
-              className={onlyFavorites ? "saved-filter active" : "saved-filter"}
-              aria-pressed={onlyFavorites}
-              onClick={() => setOnlyFavorites(!onlyFavorites)}
-            >
-              <Heart />
-              Favoritos
-            </button>
+            {examples ? (
+              <span className="collection-example">Exemplos</span>
+            ) : (
+              <button
+                className={
+                  onlyFavorites ? "saved-filter active" : "saved-filter"
+                }
+                aria-pressed={onlyFavorites}
+                onClick={() => setOnlyFavorites(!onlyFavorites)}
+              >
+                <Heart />
+                Favoritos
+              </button>
+            )}
           </div>
           {items.length ? (
             <div className="property-grid">
-              {items.map((p) => (
-                <article className="property-card" key={p.id}>
-                  <div className="card-media">
-                    <Gallery photos={p.images} title={p.title} />
-                    <span className="sale-tag">
-                      {p.purpose === "venda" ? "À venda" : "Para alugar"}
-                    </span>
-                    <button
-                      className={`favorite ${favorites.includes(p.id) ? "on" : ""}`}
-                      aria-label={`${favorites.includes(p.id) ? "Desfavoritar" : "Favoritar"} ${p.title}`}
-                      aria-pressed={favorites.includes(p.id)}
-                      onClick={() => favorite(p.id)}
-                    >
-                      <Heart
-                        fill={
-                          favorites.includes(p.id) ? "currentColor" : "none"
-                        }
-                      />
-                    </button>
-                  </div>
-                  <div className="card-content">
-                    <Link
-                      href={
-                        demo
-                          ? `/demo/imovel/${p.id}`
-                          : `/${profile.slug}/imovel/${p.id}`
-                      }
-                    >
-                      <h3>{p.title}</h3>
-                      <p style={{ fontSize: 13, marginBottom: 14 }}>
-                        {p.neighborhood} · {p.city}
-                      </p>
-                      <div className="price">
-                        {money(p.price)}
-                        {p.purpose === "aluguel" && (
-                          <small className="muted"> / mês</small>
-                        )}
-                      </div>
-                      <Facts property={p} />
-                    </Link>
-                  </div>
-                </article>
-              ))}
+              {items.map((p) => {
+                const card = (
+                  <>
+                    <h3>{p.title}</h3>
+                    <p style={{ fontSize: 13, marginBottom: 14 }}>
+                      {p.neighborhood} · {p.city}
+                    </p>
+                    <div className="price">
+                      {money(p.price)}
+                      {p.purpose === "aluguel" && (
+                        <small className="muted"> / mês</small>
+                      )}
+                    </div>
+                    <Facts property={p} />
+                  </>
+                );
+                return (
+                  <article
+                    className={`property-card${examples ? " example-card" : ""}`}
+                    key={p.id}
+                  >
+                    <div className={`card-media${examples ? " example-media" : ""}`}>
+                      {examples ? (
+                        <div className="example-photo" aria-hidden="true">
+                          <House />
+                          <span>Foto do imóvel</span>
+                        </div>
+                      ) : (
+                        <Gallery photos={p.images} title={p.title} />
+                      )}
+                      <span className="sale-tag">
+                        {p.purpose === "venda" ? "À venda" : "Para alugar"}
+                      </span>
+                      {examples ? (
+                        <span className="example-chip">Exemplo</span>
+                      ) : (
+                        <button
+                          className={`favorite ${favorites.includes(p.id) ? "on" : ""}`}
+                          aria-label={`${favorites.includes(p.id) ? "Desfavoritar" : "Favoritar"} ${p.title}`}
+                          aria-pressed={favorites.includes(p.id)}
+                          onClick={() => favorite(p.id)}
+                        >
+                          <Heart
+                            fill={
+                              favorites.includes(p.id)
+                                ? "currentColor"
+                                : "none"
+                            }
+                          />
+                        </button>
+                      )}
+                    </div>
+                    <div className="card-content">
+                      {examples ? (
+                        card
+                      ) : (
+                        <Link
+                          href={
+                            demo
+                              ? `/demo/imovel/${p.id}`
+                              : `/${profile.slug}/imovel/${p.id}`
+                          }
+                        >
+                          {card}
+                        </Link>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           ) : (
             <div className="empty">

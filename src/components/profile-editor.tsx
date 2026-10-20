@@ -1,7 +1,14 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowUp, ArrowDown, Eye, Save, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowUp,
+  ArrowDown,
+  Eye,
+  Save,
+  Trash2,
+} from "lucide-react";
 import { Profile, networks, profileSchema } from "@/lib/validation";
 import { api, Share } from "./ui";
 import { Storefront } from "./storefront";
@@ -68,6 +75,16 @@ export function ProfileEditor({
         <h1 style={{ margin: "8px 0" }}>Minha página</h1>
         <p>Uma boa apresentação abre novas portas.</p>
       </div>
+      <div className="editor-head-actions">
+        <Link className="btn" href="/painel">
+          <ArrowLeft />
+          Voltar ao painel
+        </Link>
+        <Link className="btn" href="/painel/previa">
+          <Eye />
+          Abrir prévia completa
+        </Link>
+      </div>
       <form
         className="stack"
         onSubmit={async (e) => {
@@ -91,8 +108,8 @@ export function ProfileEditor({
           }
         }}
       >
-        <section className="panel stack">
-          <h2>Primeiras impressões</h2>
+        <section className="panel stack" id="apresentacao">
+          <h2>Sua apresentação</h2>
           <p>
             JPG, PNG ou WebP, até 10 MB por imagem. A orientação e o tamanho são
             otimizados automaticamente.
@@ -148,58 +165,36 @@ export function ProfileEditor({
               ["city", "Cidade"],
               ["region", "Região de atuação"],
               ["registration", "Identificação profissional (CRECI)"],
-              ["whatsapp", "WhatsApp com país e DDD"],
             ].map(([key, label]) => (
               <label className="field" key={key}>
                 {label}
                 <input
                   value={p[key as keyof Profile] as string}
                   maxLength={120}
-                  type={key === "whatsapp" ? "tel" : "text"}
-                  placeholder={key === "whatsapp" ? "+55 11 99999-9999" : ""}
+                  type="text"
                   onChange={(e) => field(key as keyof Profile, e.target.value)}
                 />
               </label>
             ))}
           </div>
-          <small className="muted">
-            O WhatsApp é opcional no perfil e necessário para publicar imóveis.
-          </small>
         </section>
-        <section className="panel stack">
-          <h2>Seu endereço e suas cores</h2>
-          <label className="field">
-            Endereço exclusivo
-            <input
-              required
-              minLength={3}
-              maxLength={40}
-              value={p.slug}
-              onChange={(e) => field("slug", e.target.value.toLowerCase())}
-              placeholder="marinaoliveira"
-            />
-            <small>
-              Seu link será /{p.slug || "seunome"}. Use letras, números e hífen.
-            </small>
-          </label>
-          <label className="field">
-            Cor da página
-            <select
-              value={p.theme}
-              onChange={(e) => field("theme", e.target.value)}
-            >
-              <option value="forest">Verde floresta</option>
-              <option value="ocean">Azul oceano</option>
-              <option value="clay">Terracota</option>
-            </select>
-          </label>
-        </section>
-        <section className="panel stack">
-          <h2>Onde mais te encontrar</h2>
+        <section className="panel stack" id="contato">
+          <h2>Seu contato e suas redes</h2>
           <p>
-            Adicione apenas as redes que quiser mostrar. A ordem abaixo será a
-            ordem da vitrine.
+            O WhatsApp aparece na sua página. Mostre só as redes que quiser — a
+            ordem abaixo é a ordem da vitrine.
           </p>
+          <label className="field">
+            WhatsApp com país e DDD
+            <input
+              type="tel"
+              maxLength={120}
+              value={p.whatsapp}
+              placeholder="+55 11 99999-9999"
+              onChange={(e) => field("whatsapp", e.target.value)}
+            />
+            <small>Necessário para publicar imóveis.</small>
+          </label>
           {p.socials.map((s, i) => (
             <div key={i} className="stack" style={{ gap: 8 }}>
               <label className="field">
@@ -280,6 +275,34 @@ export function ProfileEditor({
                 .map((n) => (
                   <option key={n}>{n}</option>
                 ))}
+            </select>
+          </label>
+        </section>
+        <section className="panel stack" id="aparencia">
+          <h2>Seu endereço e suas cores</h2>
+          <label className="field">
+            Endereço exclusivo
+            <input
+              required
+              minLength={3}
+              maxLength={40}
+              value={p.slug}
+              onChange={(e) => field("slug", e.target.value.toLowerCase())}
+              placeholder="marinaoliveira"
+            />
+            <small>
+              Seu link será /{p.slug || "seunome"}. Use letras, números e hífen.
+            </small>
+          </label>
+          <label className="field">
+            Cor da página
+            <select
+              value={p.theme}
+              onChange={(e) => field("theme", e.target.value)}
+            >
+              <option value="forest">Verde floresta</option>
+              <option value="ocean">Azul oceano</option>
+              <option value="clay">Terracota</option>
             </select>
           </label>
         </section>

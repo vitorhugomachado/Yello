@@ -277,7 +277,10 @@ export function PropertyEditor({
       <section className="editor-section">
         <h2>Dados de contato</h2>
         <div className="settings-group">
-          <Link className="setting-row" href={demo ? "/cadastro" : "/painel"}>
+          <Link
+            className="setting-row"
+            href={demo ? "/cadastro" : "/painel/perfil"}
+          >
             <span>Perfil e WhatsApp</span>
             <span className="setting-value">
               {demo ? "Criar minha conta" : "Minha página"}

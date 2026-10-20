@@ -154,6 +154,24 @@ export function store(): Store {
       await open(user.id);
     },
 
+    async setOnboarding(state) {
+      const user = await session();
+      if (!user) throw Error("Entre novamente para continuar.");
+      const previous = user.metadata.onboarding;
+      const onboarding =
+        previous && typeof previous === "object" && !Array.isArray(previous)
+          ? (previous as Record<string, unknown>)
+          : {};
+      run(
+        "update users set metadata = ? where id = ?",
+        JSON.stringify({
+          ...user.metadata,
+          onboarding: { ...onboarding, ...state },
+        }),
+        user.id,
+      );
+    },
+
     /* Perfis */
     profile: async (id) => {
       const row = get<ProfileRow>("select * from profiles where id = ?", id);

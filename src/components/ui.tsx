@@ -3,7 +3,7 @@ import Link from "next/link";
 import {
   Share2,
   Copy,
-  UserRound,
+  House,
   LayoutGrid,
   PanelTop,
   LogOut,
@@ -72,26 +72,26 @@ export function Share({
 export function AdminNav() {
   const path = usePathname();
   const items = [
-    { href: "/painel", label: "Minha página", Icon: PanelTop },
+    { href: "/painel", label: "Início", Icon: House },
     { href: "/painel/imoveis", label: "Imóveis", Icon: LayoutGrid },
-    { href: "/painel/conta", label: "Conta", Icon: UserRound },
+    { href: "/painel/perfil", label: "Página", Icon: PanelTop },
   ];
   return (
     <nav className="bottom-nav" aria-label="Painel do corretor">
-      {items.map(({ href, label, Icon }) => (
-        <Link
-          key={href}
-          href={href}
-          className={
-            (href === "/painel" ? path === href : path.startsWith(href))
-              ? "active"
-              : ""
-          }
-        >
-          <Icon />
-          {label}
-        </Link>
-      ))}
+      {items.map(({ href, label, Icon }) => {
+        const active = href === "/painel" ? path === href : path.startsWith(href);
+        return (
+          <Link
+            key={href}
+            href={href}
+            className={active ? "active" : ""}
+            aria-current={active ? "page" : undefined}
+          >
+            <Icon />
+            {label}
+          </Link>
+        );
+      })}
     </nav>
   );
 }

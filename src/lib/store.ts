@@ -8,6 +8,7 @@
 import { configured } from "./supabase";
 import * as local from "./store/local";
 import * as cloud from "./store/supabase";
+import type { OnboardingState } from "./onboarding";
 import type { Photo, Profile, Property } from "./validation";
 
 export type Session = {
@@ -33,6 +34,8 @@ export type Store = {
   signOut(): Promise<void>;
   recover(email: string, origin: string): Promise<{ message?: string; link?: string }>;
   changePassword(password: string, token: string): Promise<void>;
+  /** Marca o primeiro acesso sem apagar outras chaves da metadata. */
+  setOnboarding(state: OnboardingState): Promise<void>;
 
   /* Perfis */
   profile(id: string): Promise<Profile | null>;

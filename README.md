@@ -55,12 +55,25 @@ Para executar a suíte pgTAP em ambiente local descartável (requer Docker e CLI
 ## Fluxo entregue
 
 - Cadastro, login, logout, recuperação e alteração de senha; sessão em cookies e proteção do painel.
-- Minha página: foto/logo, capa, nome, bio, região, cidade, CRECI, WhatsApp internacional, slug único/reservado, temas acessíveis, redes opcionais ordenáveis, prévia e cópia de link.
+- Primeiro acesso: após criar a conta, uma pausa em `/painel/boas-vindas` mostra o endereço reservado, um resumo do que vem depois e dois caminhos — ver a página ou ir direto ao painel. A tela não é um formulário e não bloqueia nada.
+- Painel `/painel`: prévia do perfil com status do link, cópia do endereço quando a página está no ar, quatro sugestões de configuração com progresso real, acesso aos imóveis e contagens de publicados, rascunhos e fotos. Visitas e contatos não são inventados.
+- Prévia `/painel/previa`: renderiza a mesma vitrine pública, com uma barra de contexto fora dela. Antes do primeiro perfil salvo, usa um perfil e dois imóveis de exemplo, todos marcados como exemplo, sem links nem favoritos; rascunhos nunca aparecem.
+- Minha página: foto/logo, capa, nome, bio, região, cidade, CRECI, WhatsApp internacional, slug único/reservado, temas acessíveis, redes opcionais ordenáveis, prévia e cópia de link. O editor em `/painel/perfil` separa apresentação, contato e aparência.
 - Imóveis: criar/editar por etapas, salvar rascunho, publicar, marcar vendido/alugado, arquivar e excluir com confirmação.
 - Fotos: seleção múltipla, acréscimo sem substituir, progresso individual, retry, exclusão, arrastar no desktop e botões de ordenação, primeira foto como capa. Até 30 fotos de 10 MB, JPG/PNG/WebP. Sharp valida o conteúdo, corrige EXIF, reduz a 1920px, remove metadados e converte em WebP.
 - Vitrine `/{slug}`: apenas publicados, filtros por finalidade/tipo, favoritos no dispositivo, cards com galeria por deslize.
 - Detalhes `/{slug}/imovel/{id}`: galeria em tela cheia com zoom, contador, botões, foco e Escape; descrição, localização aproximada, corretor e CTA fixo seguro para o celular. WhatsApp inclui título e URL.
 - Compartilhamento nativo quando disponível, com cópia de link como alternativa; metadados públicos e Open Graph.
+
+## Primeiro acesso, prévia e painel
+
+A conta nova entra por `/painel`. Enquanto não existe perfil e a metadata da conta não tem `onboarding.welcomedAt`, o painel redireciona para `/painel/boas-vindas`. A marca é gravada por uma ação explícita — **Ver minha página** ou **Agora não, ir para o painel** — em `POST /api/onboarding` com `{ "action": "welcome-seen" }`. Um GET, prefetch ou recarga nunca esconde as boas-vindas; contas que já têm perfil são tratadas como veteranas e seguem direto ao painel.
+
+O link escolhido no cadastro fica **reservado**, não publicado: a página só passa a existir quando o primeiro perfil é salvo. Por isso o painel mostra o selo **Rascunho** e troca o botão de copiar por **Disponível ao salvar** até esse momento. Quando o perfil existe, o endereço vira um link público de verdade, com cópia e abertura em outra aba.
+
+A prévia (`/painel/previa`) usa o mesmo componente `Storefront` da página pública, para que espaçamento, tipografia e cards sejam os do cliente. Sem perfil, entram o perfil de exemplo e dois cards de exemplo: avatar com o símbolo da Yello, redes apenas decorativas, bio identificada como texto de exemplo e selos **Exemplo** em cada card. Esses cards não têm link nem favorito. Com perfil, a prévia lista somente imóveis publicados; rascunhos não entram e uma faixa avisa quantos ficaram de fora. Nenhum número de visitas ou contatos é exibido.
+
+O progresso do painel tem quatro passos de 25%: nome e bio, WhatsApp, ao menos um imóvel e identidade (foto, capa ou tema diferente do padrão). Tudo é derivado dos dados salvos, e cada sugestão leva à seção correspondente do editor; nenhum passo bloqueia a navegação. No celular, a navegação inferior é **Início / Imóveis / Página**, e a conta fica no topo.
 
 ## Segurança e dados
 
@@ -84,11 +97,11 @@ npm run build
 npm audit --omit=dev
 ```
 
-Testes unitários: slugs, telefone, links e dados; banco local (esquema SQLite, contas, sessões, tokens, imóveis, fotos e visibilidade em disco); imagens reais com EXIF e arquivos disfarçados. Testes de isolamento executam as migrations em PostgreSQL via PGlite, com schemas mínimos de Auth/Storage: visitantes, dois proprietários, alterações/exclusão cruzadas, uploads em pasta alheia, publicação, arquivamento e ordenação. O motor executa RLS real, mas esses testes **não simulam o serviço de Auth nem o servidor de Storage do Supabase**. A suíte pgTAP foi preparada separadamente para esse ambiente.
+Testes unitários: slugs, telefone, links e dados; banco local (esquema SQLite, contas, sessões, tokens, imóveis, fotos e visibilidade em disco); imagens reais com EXIF e arquivos disfarçados; regras de primeiro acesso (metadata válida, perfil existente, quatro passos e saudação). Testes de isolamento executam as migrations em PostgreSQL via PGlite, com schemas mínimos de Auth/Storage: visitantes, dois proprietários, alterações/exclusão cruzadas, uploads em pasta alheia, publicação, arquivamento e ordenação. O motor executa RLS real, mas esses testes **não simulam o serviço de Auth nem o servidor de Storage do Supabase**. A suíte pgTAP foi preparada separadamente para esse ambiente.
 
-Playwright cobre celular e desktop: filtros, persistência de favoritos, galeria/tela cheia, ausência de overflow em 360px, formulários e recusa de mutações anônimas. Screenshots ficam em `test-results/` (ignorado pelo Git).
+Playwright cobre celular e desktop: cadastro → boas-vindas → prévia com exemplos → editor → painel → recarga, filtros, persistência de favoritos, galeria/tela cheia, ausência de overflow em 360px, formulários e recusa de mutações anônimas. Screenshots ficam em `test-results/` (ignorado pelo Git).
 
-Validação desta entrega: build, TypeScript, lint, 13 testes unitários/SQL e 6 testes de navegador passaram antes da revisão final. Consulte a resposta de entrega para o resultado final. Auditoria de produção: zero vulnerabilidades. A auditoria completa aponta 5 alertas altos na cadeia de desenvolvimento do ESLint (`braces`/`micromatch`/`fast-glob`); a correção automática proposta faz downgrade incompatível do eslint-config-next, portanto não foi aplicada.
+A validação desta entrega cobre build, TypeScript, lint, testes unitários/SQL e Playwright nos dois tamanhos. Consulte a resposta de entrega para o resultado final. Auditoria de produção: zero vulnerabilidades. A auditoria completa aponta 5 alertas altos na cadeia de desenvolvimento do ESLint (`braces`/`micromatch`/`fast-glob`); a correção automática proposta faz downgrade incompatível do eslint-config-next, portanto não foi aplicada.
 
 Sem credenciais fornecidas e sem Docker/CLI local, não foram executados cadastro com e-mail real, upload no Storage real nem pgTAP no Supabase. Após conectar, valide em 360–430px: cadastrar/confirmar → configurar perfil e redes → salvar imóvel → selecionar várias fotos → ordenar/capa → publicar → abrir link em janela anônima → galeria → compartilhar/WhatsApp. Repita com duas contas e confirme que uma não edita os imóveis/arquivos da outra.
 

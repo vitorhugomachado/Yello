@@ -9,10 +9,12 @@ export default async function Page() {
   const suggested =
     typeof user.metadata?.link === "string" ? user.metadata.link : "";
   return (
-    <ProfileEditor
-      initial={data as Profile | null}
-      userId={user.id}
-      suggestedSlug={suggested}
-    />
+    <div className="narrow">
+      <ProfileEditor
+        initial={data as Profile | null}
+        userId={user.id}
+        suggestedSlug={suggested}
+      />
+    </div>
   );
 }
