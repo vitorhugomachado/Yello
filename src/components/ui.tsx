@@ -1,14 +1,7 @@
 "use client";
 import Link from "next/link";
-import {
-  Share2,
-  Copy,
-  House,
-  LayoutGrid,
-  PanelTop,
-  LogOut,
-} from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
+import { Share2, Copy, LogOut } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 export function Brand() {
   return (
@@ -79,33 +72,6 @@ export function Share({
         </div>
       )}
     </>
-  );
-}
-export function AdminNav() {
-  const path = usePathname();
-  const items = [
-    { href: "/painel", label: "Início", Icon: House },
-    { href: "/painel/imoveis", label: "Imóveis", Icon: LayoutGrid },
-    { href: "/painel/perfil", label: "Página", Icon: PanelTop },
-  ];
-  return (
-    <nav className="bottom-nav" aria-label="Painel do corretor">
-      {items.map(({ href, label, Icon }) => {
-        const active =
-          href === "/painel" ? path === href : path.startsWith(href);
-        return (
-          <Link
-            key={href}
-            href={href}
-            className={active ? "active" : ""}
-            aria-current={active ? "page" : undefined}
-          >
-            <Icon />
-            {label}
-          </Link>
-        );
-      })}
-    </nav>
   );
 }
 export function Logout() {

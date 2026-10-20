@@ -1,10 +1,10 @@
-import Link from "next/link";
-import { Inbox } from "lucide-react";
 import { store } from "@/lib/store";
-import { AdminNav, Brand } from "@/components/ui";
+import { photoUrl } from "@/lib/data";
+import { AppShell } from "@/components/app-shell";
 
-/* Estrutura das telas de gestão: Início, Imóveis e Página. Contatos fica na
-   topbar, com a conta, para a navegação inferior caber inteira em 360px. */
+/* O chrome das telas de gestão vive aqui. O mockup aprovado define a
+   linguagem: rail escuro no desktop e barra contextual + menu em bottom sheet
+   no mobile. As telas internas herdam o mesmo shell e a mesma base visual. */
 export default async function AppLayout({
   children,
 }: {
@@ -12,42 +12,26 @@ export default async function AppLayout({
 }) {
   const db = store();
   const user = await db.user();
-  const unread = user ? await db.unreadLeads(user.id) : 0;
-  const initial = (user?.email || "?").slice(0, 1).toUpperCase();
+  const profile = user ? await db.profile(user.id) : null;
+  const unread = profile ? await db.unreadLeads(profile.id) : 0;
+  const reserved =
+    typeof user?.metadata?.link === "string" ? user.metadata.link : "";
+  const name =
+    profile?.name || user?.email?.split("@")[0] || "Seu espaço na Yello";
+  const slug = profile?.slug || reserved;
+
   return (
-    <div className="admin">
-      <header className="wrap topbar">
-        <Brand />
-        <div className="topbar-actions">
-          {user && (
-            <Link
-              className="topbar-icon"
-              href="/painel/contatos"
-              aria-label={`Contatos${unread ? ` (${unread} novos)` : ""}`}
-              title="Contatos"
-            >
-              <Inbox />
-              {unread > 0 && (
-                <span className="nav-badge" aria-hidden="true">
-                  {unread > 9 ? "9+" : unread}
-                </span>
-              )}
-            </Link>
-          )}
-          <Link
-            className="account-chip"
-            href="/painel/conta"
-            aria-label="Minha conta"
-          >
-            <span className="account-initial" aria-hidden="true">
-              {initial}
-            </span>
-            <span className="account-label">Conta</span>
-          </Link>
-        </div>
-      </header>
-      <main className="wrap admin-main">{children}</main>
-      <AdminNav />
-    </div>
+    <AppShell
+      user={{
+        name,
+        email: user?.email || "",
+        avatar: profile?.avatar ? photoUrl(profile.avatar) : "",
+        slug,
+        live: Boolean(profile),
+      }}
+      unread={unread}
+    >
+      {children}
+    </AppShell>
   );
 }
