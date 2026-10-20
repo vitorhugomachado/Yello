@@ -42,6 +42,10 @@ export const demoProperties: Property[] = [
     bedrooms: 3,
     bathrooms: 2,
     parking: 2,
+    condo: 680,
+    iptu: 2100,
+    amenities: "Varanda, piscina, academia",
+    video: "",
     status: "publicado",
     images: scenes.map((s, i) => ({
       id: s,
@@ -66,6 +70,10 @@ export const demoProperties: Property[] = [
     bedrooms: 3,
     bathrooms: 3,
     parking: 2,
+    condo: 0,
+    iptu: 3200,
+    amenities: "Jardim, churrasqueira, portaria",
+    video: "",
     status: "publicado",
     images: [scenes[2], scenes[1]].map((s, i) => ({
       id: s,
@@ -90,6 +98,10 @@ export const demoProperties: Property[] = [
     bedrooms: 1,
     bathrooms: 1,
     parking: 1,
+    condo: 420,
+    iptu: 900,
+    amenities: "Mobiliado, elevador, lavanderia",
+    video: "",
     status: "publicado",
     images: [scenes[3], scenes[0]].map((s, i) => ({
       id: s,

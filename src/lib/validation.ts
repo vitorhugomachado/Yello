@@ -13,6 +13,8 @@ export const reserved = [
   "demo",
   "imovel",
   "conta",
+  "termos",
+  "privacidade",
   "favicon.ico",
   "robots.txt",
   "sitemap.xml",
@@ -71,6 +73,20 @@ export const profileSchema = z.object({
   avatar: z.string().max(250).default(""),
   cover: z.string().max(250).default(""),
 });
+const httpsUrl = z
+  .string()
+  .trim()
+  .max(500)
+  .refine((v) => {
+    if (v === "") return true;
+    try {
+      const u = new URL(v);
+      return u.protocol === "https:" && !u.username && !u.password;
+    } catch {
+      return false;
+    }
+  }, "Use um link HTTPS válido.");
+
 export const propertySchema = z.object({
   title: z.string().trim().min(5).max(120),
   description: z.string().trim().min(10).max(5000),
@@ -88,6 +104,10 @@ export const propertySchema = z.object({
   bedrooms: z.coerce.number().int().min(0).max(100),
   bathrooms: z.coerce.number().int().min(0).max(100),
   parking: z.coerce.number().int().min(0).max(100),
+  condo: z.coerce.number().min(0).max(1e12).default(0),
+  iptu: z.coerce.number().min(0).max(1e12).default(0),
+  amenities: z.string().trim().max(500).default(""),
+  video: httpsUrl.default(""),
   status: z.enum(["rascunho", "publicado", "vendido", "alugado", "arquivado"]),
 });
 export type Profile = z.infer<typeof profileSchema> & { id: string };

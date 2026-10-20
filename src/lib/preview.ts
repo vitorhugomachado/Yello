@@ -26,6 +26,10 @@ const exampleBase = {
   owner_id: "preview",
   state: "SP",
   images: [],
+  condo: 0,
+  iptu: 0,
+  amenities: "",
+  video: "",
   status: "publicado" as const,
 };
 

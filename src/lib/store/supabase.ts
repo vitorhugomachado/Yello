@@ -5,6 +5,9 @@
 // código 23505 continue sendo reconhecido).
 import { supabase } from "../supabase";
 import type { ProfileInput, PropertyInput, Store } from "../store";
+import { aggregateEvents } from "../analytics";
+import type { EventKind } from "../analytics";
+import type { Lead } from "../leads";
 import type { Photo, Profile, Property } from "../validation";
 
 /** Devolve os dados de uma consulta do PostgREST, ou estoura o erro. */
@@ -77,7 +80,9 @@ export function store(): Store {
         data: { user },
       } = await db.auth.getUser();
       if (!user)
-        throw Error("Abra o link enviado ao seu e-mail para redefinir a senha.");
+        throw Error(
+          "Abra o link enviado ao seu e-mail para redefinir a senha.",
+        );
       const { error } = await db.auth.updateUser({ password });
       if (error) throw error;
     },
@@ -97,6 +102,40 @@ export function store(): Store {
         data: { onboarding: { ...onboarding, ...state } },
       });
       if (error) throw error;
+    },
+
+    async deleteAccount(password) {
+      const db = await supabase();
+      const {
+        data: { user },
+      } = await db.auth.getUser();
+      if (!user?.email) throw Error("Entre novamente para continuar.");
+      const { error: authError } = await db.auth.signInWithPassword({
+        email: user.email,
+        password,
+      });
+      if (authError) throw Error("Senha incorreta.");
+      const profile = await rows<Profile>(
+        db.from("profiles").select("*").eq("id", user.id).maybeSingle(),
+      );
+      const properties =
+        (await rows<Property[]>(
+          db.from("properties").select("*,images(*)").eq("owner_id", user.id),
+        )) || [];
+      const paths = [
+        ...(profile?.avatar ? [profile.avatar] : []),
+        ...(profile?.cover ? [profile.cover] : []),
+        ...properties.flatMap((item) =>
+          (item.images || []).map((photo) => photo.path),
+        ),
+      ];
+      if (paths.length) {
+        const { error } = await db.storage.from("media").remove(paths);
+        if (error) throw error;
+      }
+      const { error } = await db.rpc("delete_own_account");
+      if (error) throw error;
+      await db.auth.signOut();
     },
 
     async profile(id) {
@@ -137,8 +176,31 @@ export function store(): Store {
       return data?.id || null;
     },
 
+    async slugAvailable(slug) {
+      const db = await supabase();
+      const { data, error } = await db.rpc("slug_is_available", {
+        candidate: slug.toLowerCase(),
+      });
+      if (error) throw error;
+      return Boolean(data);
+    },
+
+    async slugRedirect(slug) {
+      const db = await supabase();
+      const { data, error } = await db.rpc("resolve_slug", {
+        candidate: slug.toLowerCase(),
+      });
+      if (error) throw error;
+      return typeof data === "string" && data ? data : null;
+    },
+
     async saveProfile(id, data: ProfileInput) {
       const db = await supabase();
+      /* Prepara o redirect do endereço antigo e mantém a reserva do novo. */
+      const { error: slugError } = await db.rpc("prepare_profile_slug", {
+        new_slug: data.slug,
+      });
+      if (slugError) throw slugError;
       const { error } = await db.from("profiles").upsert({ ...data, id });
       if (error) throw error;
     },
@@ -242,10 +304,9 @@ export function store(): Store {
       const data = await rows<{ position: number }[]>(
         db.from("images").select("position").eq("property_id", property),
       );
-      return (data || []).reduce(
-        (top, row) => Math.max(top, row.position),
-        -1,
-      ) + 1;
+      return (
+        (data || []).reduce((top, row) => Math.max(top, row.position), -1) + 1
+      );
     },
 
     async addImage({ owner, property, path, position }) {
@@ -301,6 +362,90 @@ export function store(): Store {
         target: property,
         ordered,
       });
+      if (error) throw error;
+    },
+
+    async recordEvent({ profileId, propertyId, kind, source }) {
+      const db = await supabase();
+      const { error } = await db.rpc("track_event", {
+        target_profile: profileId,
+        target_property: propertyId || null,
+        event_kind: kind,
+        event_source: (source || "").slice(0, 80),
+      });
+      if (error) throw error;
+    },
+
+    async profileStats(owner, days = 30) {
+      const db = await supabase();
+      const since = new Date(
+        Date.now() - Math.max(1, days) * 86400000,
+      ).toISOString();
+      const data = await rows<
+        { kind: EventKind; property_id: string | null }[]
+      >(
+        db
+          .from("events")
+          .select("kind,property_id")
+          .eq("profile_id", owner)
+          .gte("created_at", since),
+      );
+      return aggregateEvents(data || []);
+    },
+
+    async saveLead({ profileId, propertyId, name, phone, message, source }) {
+      const db = await supabase();
+      const { error } = await db.rpc("submit_lead", {
+        target_profile: profileId,
+        target_property: propertyId || null,
+        lead_name: name,
+        lead_phone: phone,
+        lead_message: message,
+        lead_source: (source || "").slice(0, 80),
+      });
+      if (error) throw error;
+    },
+
+    async leads(owner) {
+      const db = await supabase();
+      const data = await rows<Lead[]>(
+        db
+          .from("leads")
+          .select("*")
+          .eq("profile_id", owner)
+          .order("created_at", { ascending: false }),
+      );
+      return data || [];
+    },
+
+    async unreadLeads(owner) {
+      const db = await supabase();
+      const { count, error } = await db
+        .from("leads")
+        .select("id", { count: "exact", head: true })
+        .eq("profile_id", owner)
+        .is("read_at", null);
+      if (error) throw error;
+      return count || 0;
+    },
+
+    async markLeadRead(owner, id) {
+      const db = await supabase();
+      const { error } = await db
+        .from("leads")
+        .update({ read_at: new Date().toISOString() })
+        .eq("id", id)
+        .eq("profile_id", owner);
+      if (error) throw error;
+    },
+
+    async removeLead(owner, id) {
+      const db = await supabase();
+      const { error } = await db
+        .from("leads")
+        .delete()
+        .eq("id", id)
+        .eq("profile_id", owner);
       if (error) throw error;
     },
 

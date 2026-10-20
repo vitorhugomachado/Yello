@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { store } from "@/lib/store";
 import { Logout } from "@/components/ui";
 import { AuthForm } from "@/components/auth-form";
+import { DeleteAccount } from "@/components/delete-account";
 export default async function Page() {
   const user = await store().user();
   return (
@@ -20,7 +22,26 @@ export default async function Page() {
           <h2>Alterar senha</h2>
           <AuthForm mode="reset" />
         </section>
-        <p className="muted">Yello MVP · Sem cobrança nesta etapa.</p>
+        <section className="panel">
+          <h2>Seus dados</h2>
+          <p>
+            Baixe uma cópia do perfil, dos imóveis e dos contatos recebidos em
+            formato JSON.
+          </p>
+          <a className="btn" href="/api/account/export" download>
+            Baixar meus dados
+          </a>
+        </section>
+        <section className="panel danger-zone">
+          <h2>Excluir conta</h2>
+          <DeleteAccount />
+        </section>
+        <p className="muted">
+          <Link href="/termos">Termos de uso</Link> ·{" "}
+          <Link href="/privacidade">Política de privacidade</Link>
+          <br />
+          Yello MVP · Sem cobrança nesta etapa.
+        </p>
       </div>
     </div>
   );

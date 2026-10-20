@@ -47,7 +47,7 @@ create table if not exists profiles (
       length(slug) between 3 and 40
       and slug glob '[a-z]*'
       and slug not glob '*[^a-z0-9-]*'
-      and slug not in ('admin', 'painel', 'auth', 'login', 'cadastro', 'recuperar', 'redefinir', 'api', 'demo', 'imovel', 'conta', '_next')
+      and slug not in ('admin', 'painel', 'auth', 'login', 'cadastro', 'recuperar', 'redefinir', 'api', 'demo', 'imovel', 'conta', 'termos', 'privacidade', '_next')
     ),
   name text not null check (length(name) between 2 and 100),
   bio text not null default '' check (length(bio) <= 300),
@@ -66,6 +66,27 @@ create table if not exists profiles (
   )
 );
 
+-- Endereço escolhido no cadastro, antes de existir um perfil público.
+-- A reserva é o que torna verdadeira a promessa de "link reservado".
+create table if not exists slug_reservations (
+  slug text primary key collate nocase
+    check (
+      length(slug) between 3 and 40
+      and slug glob '[a-z]*'
+      and slug not glob '*[^a-z0-9-]*'
+    ),
+  user_id text not null unique references users (id) on delete cascade,
+  created_at text not null default (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
+-- Endereços antigos continuam apontando para o perfil atual.
+create table if not exists slug_redirects (
+  slug text primary key collate nocase,
+  profile_id text not null references profiles (id) on delete cascade,
+  created_at text not null default (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+create index if not exists slug_redirects_profile on slug_redirects (profile_id);
+
 create table if not exists properties (
   id text primary key,
   owner_id text not null references profiles (id) on delete cascade,
@@ -81,6 +102,10 @@ create table if not exists properties (
   bedrooms integer not null default 0 check (bedrooms between 0 and 100),
   bathrooms integer not null default 0 check (bathrooms between 0 and 100),
   parking integer not null default 0 check (parking between 0 and 100),
+  condo real not null default 0 check (condo >= 0),
+  iptu real not null default 0 check (iptu >= 0),
+  amenities text not null default '' check (length(amenities) <= 500),
+  video text not null default '' check (video = '' or video like 'https://%'),
   status text not null default 'rascunho' check (status in ('rascunho', 'publicado', 'vendido', 'alugado', 'arquivado')),
   created_at text not null default (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
   -- Necessário para a chave estrangeira composta usada em images.
@@ -97,6 +122,32 @@ create table if not exists images (
   -- Toda foto mora na pasta do corretor, dentro do imóvel.
   check (path like owner_id || '/' || property_id || '/%')
 );
+
+-- Contatos deixados pelo formulário público. O corretor só vê os seus.
+create table if not exists leads (
+  id text primary key,
+  profile_id text not null references profiles (id) on delete cascade,
+  property_id text references properties (id) on delete set null,
+  name text not null check (length(name) between 2 and 80),
+  phone text not null check (phone glob '[1-9][0-9]*' and length(phone) between 10 and 15),
+  message text not null check (length(message) between 2 and 2000),
+  source text not null default '' check (length(source) <= 80),
+  created_at text not null default (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  read_at text
+);
+create index if not exists leads_profile_created on leads (profile_id, created_at desc);
+
+-- Eventos agregados: visita, visualização de imóvel, clique e compartilhamento.
+create table if not exists events (
+  id integer primary key autoincrement,
+  profile_id text not null references profiles (id) on delete cascade,
+  property_id text references properties (id) on delete cascade,
+  kind text not null check (kind in ('profile_view', 'property_view', 'whatsapp_click', 'share')),
+  source text not null default '' check (length(source) <= 80),
+  created_at text not null default (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+create index if not exists events_profile_created on events (profile_id, created_at);
+create index if not exists events_property on events (property_id);
 
 create index if not exists properties_owner on properties (owner_id);
 create index if not exists properties_public on properties (owner_id, status);
@@ -153,4 +204,4 @@ begin
   where exists (select 1 from properties where owner_id = new.id and status = 'publicado');
 end;
 
-insert or ignore into meta (key, value) values ('schema_version', '1');
+insert or ignore into meta (key, value) values ('schema_version', '2');

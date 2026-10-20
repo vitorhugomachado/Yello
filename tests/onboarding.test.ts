@@ -38,6 +38,10 @@ const property = (overrides: Partial<Property> = {}): Property => ({
   bedrooms: 2,
   bathrooms: 1,
   parking: 1,
+  condo: 0,
+  iptu: 0,
+  amenities: "",
+  video: "",
   status: "publicado",
   images: [],
   ...overrides,
@@ -49,7 +53,9 @@ describe("primeiro acesso", () => {
     expect(readOnboarding({ onboarding: "2026-10-19" })).toEqual({});
     expect(readOnboarding({ onboarding: { welcomedAt: "ontem" } })).toEqual({});
     expect(
-      readOnboarding({ onboarding: { welcomedAt: "2026-10-19T12:00:00.000Z" } }),
+      readOnboarding({
+        onboarding: { welcomedAt: "2026-10-19T12:00:00.000Z" },
+      }),
     ).toEqual({ welcomedAt: "2026-10-19T12:00:00.000Z" });
   });
 

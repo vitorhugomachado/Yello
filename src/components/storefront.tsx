@@ -1,14 +1,16 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  MessageCircle,
-  Globe,
-  Heart,
   BedDouble,
   CarFront,
-  Scan,
+  Download,
+  Globe,
+  Heart,
   House,
+  MessageCircle,
+  Scan,
+  SlidersHorizontal,
 } from "lucide-react";
 import {
   SiInstagram,
@@ -20,9 +22,16 @@ import {
   Profile,
   Property,
   money,
+  normalizePhone,
   whatsappUrl,
   socialSchema,
 } from "@/lib/validation";
+import {
+  defaultFilters,
+  filterProperties,
+  filtersQuery,
+  type PropertyFilters,
+} from "@/lib/filters";
 import { Gallery } from "./gallery";
 import { Share } from "./ui";
 function LinkedIn() {
@@ -68,6 +77,7 @@ export function Storefront({
   demo = false,
   preview = false,
   examples = false,
+  initialFilters = defaultFilters,
 }: {
   profile: Profile;
   properties: Property[];
@@ -75,11 +85,20 @@ export function Storefront({
   preview?: boolean;
   /** Prévia sem dados reais: exemplos marcados, sem links nem favoritos. */
   examples?: boolean;
+  initialFilters?: PropertyFilters;
 }) {
-  const [purpose, setPurpose] = useState("todos"),
-    [type, setType] = useState("todos"),
+  const [filters, setFilters] = useState<PropertyFilters>(initialFilters),
     [favorites, setFavorites] = useState<string[]>([]),
     [onlyFavorites, setOnlyFavorites] = useState(false),
+    [advanced, setAdvanced] = useState(
+      () =>
+        Boolean(initialFilters.min) ||
+        Boolean(initialFilters.max) ||
+        Boolean(initialFilters.bedrooms) ||
+        Boolean(initialFilters.neighborhood) ||
+        initialFilters.sort !== "recentes",
+    ),
+    [visible, setVisible] = useState(9),
     [toast, setToast] = useState("");
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -95,12 +114,41 @@ export function Storefront({
     }, 0);
     return () => clearTimeout(timer);
   }, []);
-  const items = properties.filter(
-    (p) =>
-      (purpose === "todos" || p.purpose === purpose) &&
-      (type === "todos" || p.type === type) &&
-      (!onlyFavorites || favorites.includes(p.id)),
+  /* Filtros também ficam na URL: o corretor pode mandar uma busca pronta.
+     Preservamos utm_source/ref para a origem da visita não se perder. */
+  useEffect(() => {
+    if (preview || demo) return;
+    const params = new URLSearchParams(window.location.search);
+    for (const key of [
+      "finalidade",
+      "tipo",
+      "precoMin",
+      "precoMax",
+      "quartos",
+      "bairro",
+      "ordem",
+    ])
+      params.delete(key);
+    const nextFilters = new URLSearchParams(filtersQuery(filters).slice(1));
+    for (const [key, value] of nextFilters) params.set(key, value);
+    const query = params.toString();
+    const next = `${window.location.pathname}${query ? `?${query}` : ""}`;
+    const current = `${window.location.pathname}${window.location.search}`;
+    if (next !== current) window.history.replaceState(null, "", next);
+  }, [filters, preview, demo]);
+  const items = useMemo(
+    () =>
+      filterProperties(properties, filters).filter(
+        (p) => !onlyFavorites || favorites.includes(p.id),
+      ),
+    [properties, filters, onlyFavorites, favorites],
   );
+  const shown = items.slice(0, visible);
+  const saved = properties.filter((p) => favorites.includes(p.id));
+  function update(patch: Partial<PropertyFilters>) {
+    setFilters((current) => ({ ...current, ...patch }));
+    setVisible(9);
+  }
   function favorite(id: string) {
     const next = favorites.includes(id)
       ? favorites.filter((v) => v !== id)
@@ -118,12 +166,35 @@ export function Storefront({
     }
     setTimeout(() => setToast(""), 2500);
   }
+  function favoritesLink() {
+    if (!profile.whatsapp || !saved.length) return "";
+    const base =
+      typeof window === "undefined"
+        ? process.env.NEXT_PUBLIC_SITE_URL || ""
+        : window.location.origin;
+    const list = saved
+      .map((p) => `• ${p.title} — ${base}/${profile.slug}/imovel/${p.id}`)
+      .join("\n");
+    return `https://wa.me/${normalizePhone(profile.whatsapp)}?text=${encodeURIComponent(
+      `Olá, ${profile.name}! Separei estes imóveis na sua página:\n\n${list}`,
+    )}`;
+  }
+  function trackShare() {
+    if (preview || demo) return;
+    void fetch("/api/events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kind: "share", slug: profile.slug }),
+    }).catch(() => undefined);
+  }
   const media = (s: string) =>
     s.startsWith("https://") || (s.startsWith("/") && !s.startsWith("//"))
       ? s
       : `/api/media?path=${encodeURIComponent(s)}`;
   return (
-    <div className={`storefront theme-${profile.theme}`}>
+    <div
+      className={`storefront theme-${profile.theme}${profile.cover ? " has-cover" : ""}`}
+    >
       {demo && (
         <div className="demo-banner">
           Demonstração · perfil e imóveis fictícios
@@ -131,8 +202,24 @@ export function Storefront({
       )}
       {!preview && (
         <header className="wrap storefront-tools">
-          <Share title={`Imóveis de ${profile.name}`} />
+          {!demo && (
+            <a
+              className="btn"
+              href={`/api/vcard?slug=${encodeURIComponent(profile.slug)}`}
+              aria-label="Salvar contato"
+              title="Salvar contato"
+            >
+              <Download />
+              <span>Salvar contato</span>
+            </a>
+          )}
+          <Share title={`Imóveis de ${profile.name}`} onShare={trackShare} />
         </header>
+      )}
+      {profile.cover && !examples && (
+        <div className="storefront-cover">
+          <img src={media(profile.cover)} alt="" />
+        </div>
       )}
       <main className="wrap">
         <section className="profile">
@@ -167,7 +254,11 @@ export function Storefront({
             <div className="socials">
               {profile.whatsapp && (
                 <a
-                  href={whatsappUrl(profile.whatsapp)}
+                  href={
+                    demo
+                      ? whatsappUrl(profile.whatsapp)
+                      : `/api/out/whatsapp?slug=${encodeURIComponent(profile.slug)}`
+                  }
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="WhatsApp"
@@ -226,17 +317,24 @@ export function Storefront({
               ["aluguel", "Alugar"],
             ].map(([value, label]) => (
               <button
-                className={`btn ${purpose === value ? "selected" : ""}`}
+                className={`btn ${filters.purpose === value ? "selected" : ""}`}
                 key={value}
-                aria-pressed={purpose === value}
-                onClick={() => setPurpose(value)}
+                aria-pressed={filters.purpose === value}
+                onClick={() =>
+                  update({ purpose: value as PropertyFilters["purpose"] })
+                }
               >
                 {label}
               </button>
             ))}
             <label className="field">
               <span className="sr-only">Tipo de imóvel</span>
-              <select value={type} onChange={(e) => setType(e.target.value)}>
+              <select
+                value={filters.type}
+                onChange={(e) =>
+                  update({ type: e.target.value as PropertyFilters["type"] })
+                }
+              >
                 <option value="todos">Todos os tipos</option>
                 {["casa", "apartamento", "terreno", "comercial"].map((t) => (
                   <option key={t} value={t}>
@@ -245,7 +343,92 @@ export function Storefront({
                 ))}
               </select>
             </label>
+            <button
+              className={`btn filter-toggle ${advanced ? "selected" : ""}`}
+              aria-expanded={advanced}
+              aria-controls="filtros-avancados"
+              onClick={() => setAdvanced((value) => !value)}
+            >
+              <SlidersHorizontal />
+              Filtros
+            </button>
           </div>
+          {advanced && (
+            <div id="filtros-avancados" className="filter-panel">
+              <label className="field">
+                <span>Preço mínimo</span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  placeholder="R$"
+                  value={filters.min}
+                  onChange={(e) =>
+                    update({ min: e.target.value.replace(/[^\d]/g, "") })
+                  }
+                />
+              </label>
+              <label className="field">
+                <span>Preço máximo</span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  placeholder="R$"
+                  value={filters.max}
+                  onChange={(e) =>
+                    update({ max: e.target.value.replace(/[^\d]/g, "") })
+                  }
+                />
+              </label>
+              <label className="field">
+                <span>Quartos</span>
+                <select
+                  value={filters.bedrooms}
+                  onChange={(e) => update({ bedrooms: e.target.value })}
+                >
+                  <option value="">Todos</option>
+                  <option value="1">1+</option>
+                  <option value="2">2+</option>
+                  <option value="3">3+</option>
+                  <option value="4">4+</option>
+                </select>
+              </label>
+              <label className="field">
+                <span>Bairro ou cidade</span>
+                <input
+                  type="search"
+                  placeholder="Onde você procura?"
+                  value={filters.neighborhood}
+                  onChange={(e) =>
+                    update({ neighborhood: e.target.value.slice(0, 100) })
+                  }
+                />
+              </label>
+              <label className="field">
+                <span>Ordenar por</span>
+                <select
+                  value={filters.sort}
+                  onChange={(e) =>
+                    update({ sort: e.target.value as PropertyFilters["sort"] })
+                  }
+                >
+                  <option value="recentes">Mais recentes</option>
+                  <option value="menor-preco">Menor preço</option>
+                  <option value="maior-preco">Maior preço</option>
+                </select>
+              </label>
+              <button
+                className="btn quiet"
+                onClick={() => {
+                  setFilters(defaultFilters);
+                  setVisible(9);
+                }}
+              >
+                Limpar filtros
+              </button>
+            </div>
+          )}
           <div className="collection-meta">
             <span>
               {examples
@@ -255,91 +438,119 @@ export function Storefront({
             {examples ? (
               <span className="collection-example">Exemplos</span>
             ) : (
-              <button
-                className={
-                  onlyFavorites ? "saved-filter active" : "saved-filter"
-                }
-                aria-pressed={onlyFavorites}
-                onClick={() => setOnlyFavorites(!onlyFavorites)}
-              >
-                <Heart />
-                Favoritos
-              </button>
+              <span className="collection-actions">
+                {saved.length > 0 && profile.whatsapp && (
+                  <a
+                    className="saved-filter"
+                    href={favoritesLink()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <MessageCircle />
+                    Enviar favoritos
+                  </a>
+                )}
+                <button
+                  className={
+                    onlyFavorites ? "saved-filter active" : "saved-filter"
+                  }
+                  aria-pressed={onlyFavorites}
+                  onClick={() => setOnlyFavorites(!onlyFavorites)}
+                >
+                  <Heart />
+                  Favoritos
+                </button>
+              </span>
             )}
           </div>
           {items.length ? (
-            <div className="property-grid">
-              {items.map((p) => {
-                const card = (
-                  <>
-                    <h3>{p.title}</h3>
-                    <p style={{ fontSize: 13, marginBottom: 14 }}>
-                      {p.neighborhood} · {p.city}
-                    </p>
-                    <div className="price">
-                      {money(p.price)}
-                      {p.purpose === "aluguel" && (
-                        <small className="muted"> / mês</small>
-                      )}
-                    </div>
-                    <Facts property={p} />
-                  </>
-                );
-                return (
-                  <article
-                    className={`property-card${examples ? " example-card" : ""}`}
-                    key={p.id}
-                  >
-                    <div className={`card-media${examples ? " example-media" : ""}`}>
-                      {examples ? (
-                        <div className="example-photo" aria-hidden="true">
-                          <House />
-                          <span>Foto do imóvel</span>
-                        </div>
-                      ) : (
-                        <Gallery photos={p.images} title={p.title} />
-                      )}
-                      <span className="sale-tag">
-                        {p.purpose === "venda" ? "À venda" : "Para alugar"}
-                      </span>
-                      {examples ? (
-                        <span className="example-chip">Exemplo</span>
-                      ) : (
-                        <button
-                          className={`favorite ${favorites.includes(p.id) ? "on" : ""}`}
-                          aria-label={`${favorites.includes(p.id) ? "Desfavoritar" : "Favoritar"} ${p.title}`}
-                          aria-pressed={favorites.includes(p.id)}
-                          onClick={() => favorite(p.id)}
-                        >
-                          <Heart
-                            fill={
-                              favorites.includes(p.id)
-                                ? "currentColor"
-                                : "none"
+            <>
+              <div className="property-grid">
+                {shown.map((p) => {
+                  const card = (
+                    <>
+                      <h3>{p.title}</h3>
+                      <p style={{ fontSize: 13, marginBottom: 14 }}>
+                        {p.neighborhood} · {p.city}
+                      </p>
+                      <div className="price">
+                        {money(p.price)}
+                        {p.purpose === "aluguel" && (
+                          <small className="muted"> / mês</small>
+                        )}
+                      </div>
+                      <Facts property={p} />
+                    </>
+                  );
+                  return (
+                    <article
+                      className={`property-card${examples ? " example-card" : ""}`}
+                      key={p.id}
+                    >
+                      <div
+                        className={`card-media${examples ? " example-media" : ""}`}
+                      >
+                        {examples ? (
+                          <div className="example-photo" aria-hidden="true">
+                            <House />
+                            <span>Foto do imóvel</span>
+                          </div>
+                        ) : (
+                          <Gallery photos={p.images} title={p.title} />
+                        )}
+                        <span className="sale-tag">
+                          {p.purpose === "venda" ? "À venda" : "Para alugar"}
+                        </span>
+                        {examples ? (
+                          <span className="example-chip">Exemplo</span>
+                        ) : (
+                          <button
+                            className={`favorite ${favorites.includes(p.id) ? "on" : ""}`}
+                            aria-label={`${favorites.includes(p.id) ? "Desfavoritar" : "Favoritar"} ${p.title}`}
+                            aria-pressed={favorites.includes(p.id)}
+                            onClick={() => favorite(p.id)}
+                          >
+                            <Heart
+                              fill={
+                                favorites.includes(p.id)
+                                  ? "currentColor"
+                                  : "none"
+                              }
+                            />
+                          </button>
+                        )}
+                      </div>
+                      <div className="card-content">
+                        {examples ? (
+                          card
+                        ) : (
+                          <Link
+                            prefetch={false}
+                            href={
+                              demo
+                                ? `/demo/imovel/${p.id}`
+                                : `/${profile.slug}/imovel/${p.id}`
                             }
-                          />
-                        </button>
-                      )}
-                    </div>
-                    <div className="card-content">
-                      {examples ? (
-                        card
-                      ) : (
-                        <Link
-                          href={
-                            demo
-                              ? `/demo/imovel/${p.id}`
-                              : `/${profile.slug}/imovel/${p.id}`
-                          }
-                        >
-                          {card}
-                        </Link>
-                      )}
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
+                          >
+                            {card}
+                          </Link>
+                        )}
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+              {visible < items.length && (
+                <div className="load-more">
+                  <button
+                    className="btn"
+                    onClick={() => setVisible((value) => value + 9)}
+                  >
+                    Mostrar mais imóveis
+                  </button>
+                </div>
+              )}
+            </>
           ) : (
             <div className="empty">
               <House />
@@ -356,9 +567,9 @@ export function Storefront({
               <button
                 className="btn"
                 onClick={() => {
-                  setPurpose("todos");
-                  setType("todos");
+                  setFilters(defaultFilters);
                   setOnlyFavorites(false);
+                  setVisible(9);
                 }}
               >
                 Ver todos os imóveis
@@ -371,6 +582,8 @@ export function Storefront({
         <Link href="/" aria-label="Conheça a Yello">
           feito com yello
         </Link>
+        <Link href="/termos">Termos</Link>
+        <Link href="/privacidade">Privacidade</Link>
       </footer>
       {toast && (
         <div role="status" className="toast">

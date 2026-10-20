@@ -63,6 +63,10 @@ const demo = {
       bedrooms: 3,
       bathrooms: 2,
       parking: 2,
+      condo: 680,
+      iptu: 2100,
+      amenities: "Varanda, piscina, academia",
+      video: "",
       scenes,
     },
     {
@@ -78,6 +82,10 @@ const demo = {
       bedrooms: 3,
       bathrooms: 3,
       parking: 2,
+      condo: 0,
+      iptu: 3200,
+      amenities: "Jardim, churrasqueira, portaria",
+      video: "",
       scenes: [scenes[2], scenes[1]],
     },
     {
@@ -93,6 +101,10 @@ const demo = {
       bedrooms: 1,
       bathrooms: 1,
       parking: 1,
+      condo: 420,
+      iptu: 900,
+      amenities: "Mobiliado, elevador, lavanderia",
+      video: "",
       scenes: [scenes[3], scenes[0]],
     },
   ],
@@ -192,8 +204,8 @@ async function seed() {
   const colors = ["#e5dccb", "#d9e0dc", "#e7ded3"];
   for (const [index, property] of demo.properties.entries()) {
     db.prepare(
-      `insert into properties (id, owner_id, title, description, purpose, type, price, neighborhood, city, state, area, bedrooms, bathrooms, parking, status)
-       values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'rascunho')`,
+      `insert into properties (id, owner_id, title, description, purpose, type, price, neighborhood, city, state, area, bedrooms, bathrooms, parking, condo, iptu, amenities, video, status)
+       values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'rascunho')`,
     ).run(
       property.id,
       account.id,
@@ -209,6 +221,10 @@ async function seed() {
       property.bedrooms,
       property.bathrooms,
       property.parking,
+      property.condo,
+      property.iptu,
+      property.amenities,
+      property.video,
     );
     for (const [position, scene] of property.scenes.entries()) {
       const name = await picture(
@@ -224,7 +240,9 @@ async function seed() {
     db.prepare("update properties set status = 'publicado' where id = ?").run(
       property.id,
     );
-    console.log(`  · ${property.title} (${index + 1}/${demo.properties.length})`);
+    console.log(
+      `  · ${property.title} (${index + 1}/${demo.properties.length})`,
+    );
   }
 
   db.close();

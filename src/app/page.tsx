@@ -284,6 +284,10 @@ export default function Home() {
         <footer className="landing-footer">
           <Brand />
           <span>Seus imóveis. Um único link.</span>
+          <nav className="landing-legal" aria-label="Informações legais">
+            <Link href="/termos">Termos</Link>
+            <Link href="/privacidade">Privacidade</Link>
+          </nav>
           <Link href="/login">
             Já tenho uma conta <ArrowUpRight />
           </Link>

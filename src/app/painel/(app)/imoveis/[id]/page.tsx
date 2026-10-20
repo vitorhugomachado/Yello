@@ -15,7 +15,10 @@ export default async function Page({
   if (!data) notFound();
   return (
     <div className="narrow">
-      <PropertyEditor initial={hydrate(data)} />
+      <PropertyEditor
+        initial={hydrate(data)}
+        profileSlug={(await db.profileSlug(user.id)) || ""}
+      />
     </div>
   );
 }

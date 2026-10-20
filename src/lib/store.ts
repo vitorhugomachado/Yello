@@ -9,6 +9,8 @@ import { configured } from "./supabase";
 import * as local from "./store/local";
 import * as cloud from "./store/supabase";
 import type { OnboardingState } from "./onboarding";
+import type { EventKind, ProfileStats } from "./analytics";
+import type { Lead } from "./leads";
 import type { Photo, Profile, Property } from "./validation";
 
 export type Session = {
@@ -32,10 +34,15 @@ export type Store = {
   }): Promise<{ next?: string }>;
   signIn(email: string, password: string): Promise<void>;
   signOut(): Promise<void>;
-  recover(email: string, origin: string): Promise<{ message?: string; link?: string }>;
+  recover(
+    email: string,
+    origin: string,
+  ): Promise<{ message?: string; link?: string }>;
   changePassword(password: string, token: string): Promise<void>;
   /** Marca o primeiro acesso sem apagar outras chaves da metadata. */
   setOnboarding(state: OnboardingState): Promise<void>;
+  /** Exclui a conta e todos os dados do usuário autenticado. */
+  deleteAccount(password: string): Promise<void>;
 
   /* Perfis */
   profile(id: string): Promise<Profile | null>;
@@ -43,7 +50,32 @@ export type Store = {
   profileWhatsapp(id: string): Promise<string | null>;
   profileBySlug(slug: string): Promise<Profile | null>;
   profileId(slug: string): Promise<string | null>;
+  /** Um endereço está livre? Considera perfis, reservas e redirecionamentos. */
+  slugAvailable(slug: string): Promise<boolean>;
+  /** Endereço antigo -> slug atual, para redirect 301. */
+  slugRedirect(slug: string): Promise<string | null>;
   saveProfile(id: string, data: ProfileInput): Promise<void>;
+
+  /* Métricas e contatos */
+  recordEvent(input: {
+    profileId: string;
+    propertyId?: string | null;
+    kind: EventKind;
+    source?: string;
+  }): Promise<void>;
+  profileStats(owner: string, days?: number): Promise<ProfileStats>;
+  saveLead(input: {
+    profileId: string;
+    propertyId?: string | null;
+    name: string;
+    phone: string;
+    message: string;
+    source?: string;
+  }): Promise<void>;
+  leads(owner: string): Promise<Lead[]>;
+  unreadLeads(owner: string): Promise<number>;
+  markLeadRead(owner: string, id: string): Promise<void>;
+  removeLead(owner: string, id: string): Promise<void>;
 
   /* Imóveis */
   properties(owner: string, onlyPublished?: boolean): Promise<Property[]>;
@@ -77,7 +109,11 @@ export type Store = {
   imagePath(owner: string, id: string): Promise<string | null>;
   imagePaths(owner: string, property: string): Promise<string[]>;
   removeImage(owner: string, id: string): Promise<void>;
-  reorderImages(owner: string, property: string, ordered: string[]): Promise<void>;
+  reorderImages(
+    owner: string,
+    property: string,
+    ordered: string[],
+  ): Promise<void>;
 
   /* Arquivos */
   upload(path: string, bytes: Buffer): Promise<void>;
@@ -110,9 +146,9 @@ export function store(): Store {
 export function isDuplicate(error: unknown) {
   return Boolean(
     error &&
-      typeof error === "object" &&
-      "code" in error &&
-      (error as { code?: unknown }).code === "23505",
+    typeof error === "object" &&
+    "code" in error &&
+    (error as { code?: unknown }).code === "23505",
   );
 }
 

@@ -1,6 +1,6 @@
 create table public.profiles (
  id uuid primary key references auth.users on delete cascade,
- slug text not null unique check (slug ~ '^[a-z][a-z0-9-]{2,39}$' and slug not in ('admin','painel','auth','login','cadastro','recuperar','redefinir','api','demo','imovel','conta','_next')),
+ slug text not null unique check (slug ~ '^[a-z][a-z0-9-]{2,39}$' and slug not in ('admin','painel','auth','login','cadastro','recuperar','redefinir','api','demo','imovel','conta','termos','privacidade','_next')),
  name text not null check (length(name) between 2 and 100), bio text not null default '' check(length(bio)<=300),
  city text not null default '', region text not null default '', registration text not null default '',
  whatsapp text not null default '' check(whatsapp='' or whatsapp ~ '^[1-9][0-9]{9,14}$'),

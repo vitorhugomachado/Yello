@@ -28,10 +28,15 @@ export function Share({
   url,
   title = "Yello",
   copy = false,
+  onShare,
+  track,
 }: {
   url?: string;
   title?: string;
   copy?: boolean;
+  onShare?: () => void;
+  /** Evento first-party disparado no clique, sem função no servidor. */
+  track?: { slug: string; propertyId?: string };
 }) {
   const [message, setMessage] = useState("");
   return (
@@ -40,6 +45,13 @@ export function Share({
         className="btn"
         onClick={async () => {
           try {
+            onShare?.();
+            if (track)
+              void fetch("/api/events", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ kind: "share", ...track }),
+              }).catch(() => undefined);
             const link = url
               ? new URL(url, location.origin).href
               : location.href;
@@ -79,7 +91,8 @@ export function AdminNav() {
   return (
     <nav className="bottom-nav" aria-label="Painel do corretor">
       {items.map(({ href, label, Icon }) => {
-        const active = href === "/painel" ? path === href : path.startsWith(href);
+        const active =
+          href === "/painel" ? path === href : path.startsWith(href);
         return (
           <Link
             key={href}

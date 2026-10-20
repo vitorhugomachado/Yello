@@ -52,6 +52,10 @@ const property: PropertyInput = {
   bedrooms: 2,
   bathrooms: 1,
   parking: 1,
+  condo: 450,
+  iptu: 120,
+  amenities: "Varanda, elevador",
+  video: "https://youtu.be/exemplo",
   status: "rascunho",
 };
 
@@ -62,7 +66,9 @@ describe("esquema", () => {
 
   it("nasce com as tabelas e a versão registrada", () => {
     const tables = database()
-      .prepare("select name from sqlite_master where type = 'table' order by name")
+      .prepare(
+        "select name from sqlite_master where type = 'table' order by name",
+      )
       .all()
       .map((row) => (row as { name: string }).name);
     expect(tables).toContain("profiles");
@@ -70,9 +76,10 @@ describe("esquema", () => {
     expect(tables).toContain("images");
     expect(tables).toContain("users");
     expect(
-      get<{ value: string }>("select value from meta where key = 'schema_version'")
-        ?.value,
-    ).toBe("1");
+      get<{ value: string }>(
+        "select value from meta where key = 'schema_version'",
+      )?.value,
+    ).toBe("2");
   });
 });
 
@@ -201,9 +208,9 @@ describe("imóveis e fotos", () => {
     const list = await db.properties(owner.id, true);
     expect(list).toHaveLength(1);
     expect(list[0].images.map((photo) => photo.position)).toEqual([0, 1]);
-    await expect(
-      db.reorderImages(owner.id, id, [second.id]),
-    ).rejects.toThrow(/invalid image list/i);
+    await expect(db.reorderImages(owner.id, id, [second.id])).rejects.toThrow(
+      /invalid image list/i,
+    );
     await db.reorderImages(owner.id, id, [second.id, list[0].images[0].id]);
     const after = await db.property(owner.id, id);
     expect(after?.images[0].id).toBe(second.id);
@@ -220,7 +227,9 @@ describe("imóveis e fotos", () => {
   it("não deixa outro corretor mexer no imóvel", async () => {
     expect(await db.ownsProperty(owner.id, id)).toBe(true);
     expect(await db.ownsProperty("outro-id", id)).toBe(false);
-    await expect(db.removeImage("outro-id", "qualquer")).resolves.toBeUndefined();
+    await expect(
+      db.removeImage("outro-id", "qualquer"),
+    ).resolves.toBeUndefined();
     expect(await db.property("outro-id", id)).toBe(null);
   });
 
@@ -235,6 +244,108 @@ describe("imóveis e fotos", () => {
     await db.removeProperty(owner.id, id);
     expect(await db.property(owner.id, id)).toBe(null);
     expect(await db.imagePaths(owner.id, id)).toHaveLength(0);
+  });
+});
+
+describe("endereços, eventos e contatos", () => {
+  const db = store();
+  const owner = createAccount("engajamento@yello.local", "yello1234");
+  let propertyId = "";
+
+  it("reserva o endereço no primeiro salvamento e redireciona o antigo", async () => {
+    await db.saveProfile(owner.id, { ...profile, slug: "engajamento" });
+    expect(await db.slugAvailable("engajamento")).toBe(false);
+    await db.saveProfile(owner.id, { ...profile, slug: "engajamento-novo" });
+    expect(await db.slugRedirect("engajamento")).toBe("engajamento-novo");
+    expect(await db.profileBySlug("engajamento")).toBe(null);
+    expect(await db.slugAvailable("engajamento")).toBe(false);
+
+    const other = createAccount("endereco@yello.local", "yello1234");
+    await expect(
+      db.saveProfile(other.id, { ...profile, slug: "engajamento" }),
+    ).rejects.toMatchObject({ code: "23505" });
+    expect(await db.slugRedirect("engajamento-novo")).toBe(null);
+  });
+
+  it("grava visitas, cliques e o interesse por imóvel", async () => {
+    propertyId = (
+      await db.saveProperty(owner.id, null, {
+        ...property,
+        title: "Imóvel de engajamento",
+      })
+    ).id;
+    expect(await db.property(owner.id, propertyId)).toMatchObject({
+      condo: 450,
+      iptu: 120,
+      amenities: "Varanda, elevador",
+      video: "https://youtu.be/exemplo",
+    });
+    await db.recordEvent({ profileId: owner.id, kind: "profile_view" });
+    await db.recordEvent({
+      profileId: owner.id,
+      propertyId,
+      kind: "property_view",
+      source: "whatsapp",
+    });
+    await db.recordEvent({
+      profileId: owner.id,
+      propertyId,
+      kind: "whatsapp_click",
+    });
+    await db.recordEvent({
+      profileId: owner.id,
+      propertyId,
+      kind: "share",
+    });
+    const stats = await db.profileStats(owner.id);
+    expect(stats).toMatchObject({
+      views: 1,
+      propertyViews: 1,
+      whatsappClicks: 1,
+      shares: 1,
+    });
+    expect(stats.byProperty).toEqual([{ id: propertyId, views: 1, clicks: 1 }]);
+  });
+
+  it("recebe, marca como lido e exclui um contato", async () => {
+    await db.saveLead({
+      profileId: owner.id,
+      propertyId,
+      name: "Ana",
+      phone: "5548999999999",
+      message: "Gostaria de agendar uma visita.",
+      source: "teste",
+    });
+    let leads = await db.leads(owner.id);
+    expect(leads).toHaveLength(1);
+    expect(leads[0]).toMatchObject({
+      name: "Ana",
+      property_id: propertyId,
+      message: "Gostaria de agendar uma visita.",
+    });
+    expect(await db.unreadLeads(owner.id)).toBe(1);
+    await db.markLeadRead(owner.id, leads[0].id);
+    expect(await db.unreadLeads(owner.id)).toBe(0);
+    leads = await db.leads(owner.id);
+    expect(leads[0].read_at).toBeTruthy();
+    await db.removeLead(owner.id, leads[0].id);
+    expect(await db.leads(owner.id)).toEqual([]);
+  });
+
+  it("não deixa outro corretor ler ou apagar o contato", async () => {
+    await db.saveLead({
+      profileId: owner.id,
+      name: "Bruno",
+      phone: "5548888888888",
+      message: "Tenho interesse.",
+      source: "",
+    });
+    const lead = (await db.leads(owner.id))[0];
+    const other = createAccount("contato@yello.local", "yello1234");
+    await db.markLeadRead(other.id, lead.id);
+    expect((await db.leads(owner.id))[0].read_at).toBe(null);
+    await db.removeLead(other.id, lead.id);
+    expect(await db.leads(owner.id)).toHaveLength(1);
   });
 });
 
@@ -268,9 +379,9 @@ describe("fotos no disco", () => {
     await db.saveProperty(owner.id, id, { ...property, status: "publicado" });
     expect((await db.download(file, null))?.type).toBe("image/webp");
     /* Arquivo de fora da pasta do dono nunca aparece. */
-    expect(
-      await db.download("outro-id/property/arquivo.webp", null),
-    ).toBe(null);
+    expect(await db.download("outro-id/property/arquivo.webp", null)).toBe(
+      null,
+    );
   });
 
   it("recusa caminho com subida de pasta", async () => {

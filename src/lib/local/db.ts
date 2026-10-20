@@ -9,7 +9,8 @@ import { DatabaseSync } from "node:sqlite";
 import { SCHEMA } from "./schema";
 
 /** Valores que o node:sqlite aceita como parâmetro (booleano vira 0/1). */
-export type Param = string | number | bigint | null | undefined | boolean | Uint8Array;
+export type Param =
+  string | number | bigint | null | undefined | boolean | Uint8Array;
 
 type Global = typeof globalThis & { __yelloDb?: DatabaseSync };
 
@@ -27,8 +28,32 @@ export function database(): DatabaseSync {
   const db = new DatabaseSync(file);
   db.exec("pragma busy_timeout = 5000");
   db.exec(SCHEMA);
+  migrate(db);
   root.__yelloDb = db;
   return db;
+}
+
+/**
+ * O esquema usa create table if not exists, então bancos já existentes não
+ * ganham colunas novas sozinhos. Esta migração curta mantém o arquivo local
+ * compatível sem apagar dados de quem já está usando o Yello.
+ */
+function migrate(db: DatabaseSync) {
+  const columns = new Set(
+    (
+      db.prepare("pragma table_info(properties)").all() as { name: string }[]
+    ).map((column) => column.name),
+  );
+  const additions: [string, string][] = [
+    ["condo", "real not null default 0"],
+    ["iptu", "real not null default 0"],
+    ["amenities", "text not null default ''"],
+    ["video", "text not null default ''"],
+  ];
+  for (const [name, definition] of additions)
+    if (!columns.has(name))
+      db.exec(`alter table properties add column ${name} ${definition}`);
+  db.prepare("update meta set value = '2' where key = 'schema_version'").run();
 }
 
 /** Fecha a conexão. Usado pelos testes para trocar de arquivo. */
@@ -39,11 +64,15 @@ export function closeDatabase() {
 }
 
 const bind = (params: Param[]) =>
-  params.map((value) => (typeof value === "boolean" ? (value ? 1 : 0) : (value ?? null)));
+  params.map((value) =>
+    typeof value === "boolean" ? (value ? 1 : 0) : (value ?? null),
+  );
 
 /** Primeira linha do resultado, ou null. */
 export function get<T>(sql: string, ...params: Param[]): T | null {
-  const row = database().prepare(sql).get(...bind(params));
+  const row = database()
+    .prepare(sql)
+    .get(...bind(params));
   return row ? ({ ...row } as T) : null;
 }
 
@@ -60,7 +89,10 @@ export function run(sql: string, ...params: Param[]) {
   const result = database()
     .prepare(sql)
     .run(...bind(params));
-  return { changes: Number(result.changes), id: String(result.lastInsertRowid) };
+  return {
+    changes: Number(result.changes),
+    id: String(result.lastInsertRowid),
+  };
 }
 
 /** Roda várias escritas em uma transação; qualquer erro desfaz tudo. */

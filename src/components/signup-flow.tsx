@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Check, Pencil } from "lucide-react";
 import { AuthForm } from "./auth-form";
@@ -86,7 +87,9 @@ export function SignupFlow({
   return (
     <AuthCard
       side="signup"
-      title={step === "link" ? "Sua vitrine começa aqui." : "Quase tudo pronto."}
+      title={
+        step === "link" ? "Sua vitrine começa aqui." : "Quase tudo pronto."
+      }
       text={
         step === "link"
           ? "Escolha o endereço da sua página e crie o acesso: leva menos de um minuto."
@@ -179,9 +182,10 @@ function LinkStep({
   const [answer, setAnswer] = useState<{ slug: string; check: Check } | null>(
     null,
   );
-  const [options, setOptions] = useState<{ slug: string; list: string[] } | null>(
-    null,
-  );
+  const [options, setOptions] = useState<{
+    slug: string;
+    list: string[];
+  } | null>(null);
   const slug = slugify(value);
   const problem = linkProblem(slug);
   const check: Check = problem
@@ -350,6 +354,11 @@ function AccountStep({
         </button>
       </div>
       <AuthForm mode="signup" link={slug} />
+      <p className="signup-legal">
+        Ao criar sua conta, você aceita os{" "}
+        <Link href="/termos">Termos de uso</Link> e a{" "}
+        <Link href="/privacidade">Política de privacidade</Link>.
+      </p>
     </div>
   );
 }

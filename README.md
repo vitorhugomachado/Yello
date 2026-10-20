@@ -1,6 +1,6 @@
 # Morada
 
-MVP de vitrine imobiliária no estilo link na bio, com Next.js 16.4.2, React 19.3, TypeScript, Tailwind CSS 4, Supabase Auth/PostgreSQL/Storage e Lucide. Para desenvolvimento há um banco local em SQLite (dados, sessões e fotos em disco) que dispensa credenciais. Versões exatas no `package-lock.json`. Node 24 recomendado.
+MVP de vitrine imobiliária no estilo link na bio, com Next.js 16.4.2, React 19.3, TypeScript, Tailwind CSS 4, Supabase Auth/PostgreSQL/Storage e Lucide. Para desenvolvimento há um banco local em SQLite (dados, sessões e fotos em disco) que dispensa credenciais. Versões exatas no `package-lock.json`. Node 24 ou superior é necessário para o banco local (`node:sqlite`).
 
 ## Executar
 
@@ -35,7 +35,7 @@ Diferenças do modo local, todas por ser uma ferramenta de desenvolvimento: a co
 
 1. Crie um projeto Supabase. Em Project Settings → API, copie a URL e a chave **publishable** (ou a chave pública anon legada) para `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
 2. Defina `NEXT_PUBLIC_SITE_URL=http://localhost:3000` no desenvolvimento. Em produção use a origem HTTPS definitiva, sem caminho. Ela compõe os links de interesse e os metadados sociais.
-3. No SQL Editor execute, nesta ordem, `supabase/migrations/202610180001_initial.sql` e `supabase/migrations/202610180002_integrity.sql`. Os arquivos criam tabelas, índices, constraints, triggers, políticas RLS e o bucket **privado** `media`.
+3. No SQL Editor execute, nesta ordem, `supabase/migrations/202610180001_initial.sql`, `supabase/migrations/202610180002_integrity.sql` e `supabase/migrations/202610200001_engagement.sql`. Os arquivos criam tabelas, índices, constraints, triggers, políticas RLS, o bucket **privado** `media`, reservas de link, redirecionamentos, métricas first-party e a caixa de contatos.
 4. Em Authentication → Providers, habilite Email e mantenha confirmação de e-mail. Em URL Configuration configure Site URL e autorize `http://localhost:3000/auth/callback` e `http://localhost:3000/auth/callback?next=/redefinir`. Acrescente os mesmos callbacks com a origem de produção.
 5. Os templates padrão que usam `{{ .ConfirmationURL }}` são compatíveis com o callback PKCE. Abra o link no mesmo navegador usado para iniciar o cadastro/recuperação. Configure SMTP próprio para entrega real de e-mails e limites de envio adequados antes de disponibilizar ao público.
 6. Reinicie o Next.js após editar o ambiente. Cadastre uma conta e confirme o e-mail.
@@ -56,14 +56,16 @@ Para executar a suíte pgTAP em ambiente local descartável (requer Docker e CLI
 
 - Cadastro, login, logout, recuperação e alteração de senha; sessão em cookies e proteção do painel.
 - Primeiro acesso: após criar a conta, uma pausa em `/painel/boas-vindas` mostra o endereço reservado, um resumo do que vem depois e dois caminhos — ver a página ou ir direto ao painel. A tela não é um formulário e não bloqueia nada.
-- Painel `/painel`: prévia do perfil com status do link, cópia do endereço quando a página está no ar, quatro sugestões de configuração com progresso real, acesso aos imóveis e contagens de publicados, rascunhos e fotos. Visitas e contatos não são inventados.
+- Painel `/painel`: prévia do perfil com status do link, cópia do endereço e QR quando a página está no ar, quatro sugestões de configuração com progresso real, acesso aos imóveis e contagens de publicados, rascunhos e fotos. As visitas, visualizações de imóveis, cliques no WhatsApp, compartilhamentos e os imóveis com mais interesse vêm de eventos reais dos últimos 30 dias. A caixa de entrada resume as mensagens recebidas e destaca as não lidas.
 - Prévia `/painel/previa`: renderiza a mesma vitrine pública, com uma barra de contexto fora dela. Antes do primeiro perfil salvo, usa um perfil e dois imóveis de exemplo, todos marcados como exemplo, sem links nem favoritos; rascunhos nunca aparecem.
-- Minha página: foto/logo, capa, nome, bio, região, cidade, CRECI, WhatsApp internacional, slug único/reservado, temas acessíveis, redes opcionais ordenáveis, prévia e cópia de link. O editor em `/painel/perfil` separa apresentação, contato e aparência.
-- Imóveis: criar/editar por etapas, salvar rascunho, publicar, marcar vendido/alugado, arquivar e excluir com confirmação.
+- Minha página: capa, foto/logo, nome, bio, região, cidade, CRECI, WhatsApp internacional, slug único/reservado, temas acessíveis, redes opcionais ordenáveis, prévia e cópia de link. O editor em `/painel/perfil` separa apresentação, contato e aparência. O endereço antigo vira um redirecionamento quando o slug muda.
+- Imóveis: criar/editar por etapas, salvar rascunho, publicar, marcar vendido/alugado, arquivar e excluir com confirmação. Condomínio, IPTU, comodidades e link de vídeo/tour complementam o anúncio; a publicação mostra o link público e oferece compartilhamento na hora.
 - Fotos: seleção múltipla, acréscimo sem substituir, progresso individual, retry, exclusão, arrastar no desktop e botões de ordenação, primeira foto como capa. Até 30 fotos de 10 MB, JPG/PNG/WebP. Sharp valida o conteúdo, corrige EXIF, reduz a 1920px, remove metadados e converte em WebP.
-- Vitrine `/{slug}`: apenas publicados, filtros por finalidade/tipo, favoritos no dispositivo, cards com galeria por deslize.
-- Detalhes `/{slug}/imovel/{id}`: galeria em tela cheia com zoom, contador, botões, foco e Escape; descrição, localização aproximada, corretor e CTA fixo seguro para o celular. WhatsApp inclui título e URL.
-- Compartilhamento nativo quando disponível, com cópia de link como alternativa; metadados públicos e Open Graph.
+- Vitrine `/{slug}`: capa quando cadastrada, apenas publicados, busca por finalidade, tipo, preço, quartos, bairro/cidade e ordenação; filtros compartilháveis na URL, favoritos no dispositivo, envio da lista de favoritos pelo WhatsApp, cards com galeria por deslize, contato vCard e QR code.
+- Detalhes `/{slug}/imovel/{id}`: galeria em tela cheia com zoom, contador, botões, foco e Escape; descrição, comodidades, condomínio/IPTU, localização aproximada com link para o mapa, corretor, formulário de mensagem e CTA fixo seguro para o celular. WhatsApp inclui título e URL e passa por um redirecionamento medido.
+- Contatos: o formulário do imóvel guarda nome, WhatsApp e mensagem na caixa de entrada do corretor, com marcação de lida, resposta direta no WhatsApp e exclusão. A topbar mostra quantas mensagens novas existem.
+- Compartilhamento nativo quando disponível, com cópia de link como alternativa; compartilhamentos são contados de forma agregada. Metadados públicos e Open Graph.
+- Conta e privacidade: exportação dos dados em JSON, exclusão definitiva da conta com confirmação de senha, termos de uso e política de privacidade públicos.
 
 ## Primeiro acesso, prévia e painel
 
@@ -79,9 +81,13 @@ O progresso do painel tem quatro passos de 25%: nome e bio, WhatsApp, ao menos u
 
 `profiles` contém exclusivamente dados públicos profissionais. E-mail e credenciais ficam no Supabase Auth; no banco local, somente o hash scrypt e o sal ficam em `users`. `properties` e `images` possuem dono explícito e FK composta para impedir associar fotos a imóveis de outro usuário. RLS protege leitura e mutações no Supabase; no modo local, cada consulta filtra pelo dono na própria camada de dados (`src/lib/store/local.ts`) e as mesmas restrições vivem no esquema SQLite. A aplicação nunca usa chave privilegiada.
 
+O endereço escolhido no cadastro é reservado numa tabela própria. Trocar o slug guarda o endereço anterior em `slug_redirects`; a página antiga redireciona para a atual em vez de virar um 404. As consultas públicas de disponibilidade consideram perfis, reservas e redirecionamentos.
+
+A medição é first-party e agregada: só guardamos o tipo de evento, o perfil, o imóvel e a origem normalizada (`utm_source`/`ref`). Não guardamos IP, cookie de analytics nem dado pessoal do visitante. Bots, prévias de redes sociais e o próprio dono não contam visita. Contatos têm nome, WhatsApp e mensagem por serem necessários para a resposta do corretor; ficam visíveis apenas para o dono do perfil e podem ser exportados ou excluídos com a conta.
+
 O bucket é privado. A leitura das fotos verifica RLS a cada acesso em `/api/media`, sem cache compartilhado. Visitantes leem fotos vinculadas a imóveis publicados ou à foto/capa atual do perfil; upload e exclusão exigem a pasta do próprio usuário. Arquivar revoga a leitura pública futura. Arquivos já baixados por visitantes não podem ser revogados.
 
-Publicação exige foto e WhatsApp, inclusive por trigger SQL. Excluir a última foto retorna o imóvel a rascunho. Reordenação é transacional e recusa listas incompletas/IDs de terceiros. URLs externas aceitam HTTPS sem credenciais e abrem com `noopener noreferrer`. Mutações HTTP conferem origem, sessão e dados no servidor. `localStorage` contém somente IDs de favoritos.
+Publicação exige foto e WhatsApp, inclusive por trigger SQL. Excluir a última foto retorna o imóvel a rascunho. Reordenação é transacional e recusa listas incompletas/IDs de terceiros. URLs externas aceitam HTTPS sem credenciais e abrem com `noopener noreferrer`. Mutações HTTP conferem origem, sessão e dados no servidor. Cadastro, disponibilidade de slug, eventos, contatos, saída para WhatsApp e exclusão de conta têm limite de tentativas em memória por instância; para várias instâncias, complemente com o limite da hospedagem ou Redis. Cabeçalhos de segurança básicos (`nosniff`, `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy` e HSTS em produção) são aplicados em todas as respostas. `localStorage` contém somente IDs de favoritos.
 
 Uploads de foto/capa ainda não vinculados ao perfil ficam privados. Se o usuário abandonar a edição ou trocar a imagem, arquivos antigos podem permanecer privados no bucket; não há rotina automática de coleta de órfãos neste MVP. Exclusão de imóvel remove os arquivos antes dos registros; em falha de rede, a interface informa erro e permite repetir.
 
@@ -97,9 +103,9 @@ npm run build
 npm audit --omit=dev
 ```
 
-Testes unitários: slugs, telefone, links e dados; banco local (esquema SQLite, contas, sessões, tokens, imóveis, fotos e visibilidade em disco); imagens reais com EXIF e arquivos disfarçados; regras de primeiro acesso (metadata válida, perfil existente, quatro passos e saudação). Testes de isolamento executam as migrations em PostgreSQL via PGlite, com schemas mínimos de Auth/Storage: visitantes, dois proprietários, alterações/exclusão cruzadas, uploads em pasta alheia, publicação, arquivamento e ordenação. O motor executa RLS real, mas esses testes **não simulam o serviço de Auth nem o servidor de Storage do Supabase**. A suíte pgTAP foi preparada separadamente para esse ambiente.
+Testes unitários: slugs, telefone, links e dados; banco local (esquema SQLite, contas, sessões, tokens, imóveis, fotos, reserva/redirect de slug, eventos agregados e contatos); imagens reais com EXIF e arquivos disfarçados; regras de primeiro acesso (metadata válida, perfil existente, quatro passos e saudação). Testes de isolamento executam as migrations em PostgreSQL via PGlite, com schemas mínimos de Auth/Storage: visitantes, dois proprietários, alterações/exclusão cruzadas, uploads em pasta alheia, publicação, arquivamento e ordenação. O motor executa RLS real, mas esses testes **não simulam o serviço de Auth nem o servidor de Storage do Supabase**. A suíte pgTAP foi preparada separadamente para esse ambiente.
 
-Playwright cobre celular e desktop: cadastro → boas-vindas → prévia com exemplos → editor → painel → recarga, filtros, persistência de favoritos, galeria/tela cheia, ausência de overflow em 360px, formulários e recusa de mutações anônimas. Screenshots ficam em `test-results/` (ignorado pelo Git).
+Playwright cobre celular e desktop: cadastro → boas-vindas → prévia com exemplos → editor → painel → recarga, filtros na URL, persistência de favoritos, galeria/tela cheia, ausência de overflow em 360px, formulários e recusa de mutações anônimas. A cobertura de engajamento abre a vitrine com capa, confere QR/vCard/termos/privacidade, mede visita, clique e contato com um visitante anônimo, exercita a caixa de entrada e exporta/exclui uma conta descartável. Screenshots ficam em `test-results/` (ignorado pelo Git).
 
 A validação desta entrega cobre build, TypeScript, lint, testes unitários/SQL e Playwright nos dois tamanhos. Consulte a resposta de entrega para o resultado final. Auditoria de produção: zero vulnerabilidades. A auditoria completa aponta 5 alertas altos na cadeia de desenvolvimento do ESLint (`braces`/`micromatch`/`fast-glob`); a correção automática proposta faz downgrade incompatível do eslint-config-next, portanto não foi aplicada.
 

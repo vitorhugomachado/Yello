@@ -1,6 +1,10 @@
-import { notFound } from "next/navigation";
-import { dataBackend } from "@/lib/store";
+import { headers } from "next/headers";
+import { notFound, redirect } from "next/navigation";
+import { after } from "next/server";
+import { dataBackend, store } from "@/lib/store";
 import { publicProfile, publicProperties, photoUrl } from "@/lib/data";
+import { eventSource, isBot, isPrefetch } from "@/lib/analytics";
+import { parseFilters } from "@/lib/filters";
 import { Storefront } from "@/components/storefront";
 export async function generateMetadata({
   params,
@@ -21,11 +25,41 @@ export async function generateMetadata({
 }
 export default async function Page({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   if (!dataBackend()) notFound();
-  const p = await publicProfile((await params).slug);
-  if (!p) notFound();
-  return <Storefront profile={p} properties={await publicProperties(p.id)} />;
+  const db = store();
+  const slug = (await params).slug;
+  const p = await db.profileBySlug(slug);
+  if (!p) {
+    const target = await db.slugRedirect(slug);
+    if (target && target !== slug) redirect(`/${target}`);
+    notFound();
+  }
+  const query = await searchParams;
+  const user = await db.user();
+  if (user?.id !== p.id) {
+    const requestHeaders = await headers();
+    if (
+      !isBot(requestHeaders.get("user-agent")) &&
+      !isPrefetch(requestHeaders)
+    ) {
+      const source = eventSource(query);
+      after(() =>
+        db
+          .recordEvent({ profileId: p.id, kind: "profile_view", source })
+          .catch(() => undefined),
+      );
+    }
+  }
+  return (
+    <Storefront
+      profile={p}
+      properties={await publicProperties(p.id)}
+      initialFilters={parseFilters(query)}
+    />
+  );
 }

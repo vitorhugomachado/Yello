@@ -1,6 +1,9 @@
-import { notFound } from "next/navigation";
+import { headers } from "next/headers";
+import { notFound, redirect } from "next/navigation";
+import { after } from "next/server";
 import { dataBackend, store } from "@/lib/store";
 import { publicProfile, hydrate, photoUrl } from "@/lib/data";
+import { eventSource, isBot, isPrefetch } from "@/lib/analytics";
 import { PropertyDetail } from "@/components/property-detail";
 async function load(slug: string, id: string) {
   if (!dataBackend()) return null;
@@ -30,11 +33,39 @@ export async function generateMetadata({
 }
 export default async function Page({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string; id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { slug, id } = await params;
+  const db = store();
   const item = await load(slug, id);
-  if (!item) notFound();
-  return <PropertyDetail {...item} />;
+  if (!item) {
+    const target = await db.slugRedirect(slug);
+    if (target && target !== slug) redirect(`/${target}/imovel/${id}`);
+    notFound();
+  }
+  const query = await searchParams;
+  const source = eventSource(query);
+  const user = await db.user();
+  if (user?.id !== item.profile.id) {
+    const requestHeaders = await headers();
+    if (
+      !isBot(requestHeaders.get("user-agent")) &&
+      !isPrefetch(requestHeaders)
+    ) {
+      after(() =>
+        db
+          .recordEvent({
+            profileId: item.profile.id,
+            propertyId: item.property.id,
+            kind: "property_view",
+            source,
+          })
+          .catch(() => undefined),
+      );
+    }
+  }
+  return <PropertyDetail {...item} source={source} />;
 }

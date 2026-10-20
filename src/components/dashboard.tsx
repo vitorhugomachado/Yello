@@ -4,9 +4,13 @@ import {
   ArrowUpRight,
   Eye,
   House,
+  Inbox,
   Plus,
+  QrCode,
 } from "lucide-react";
 import type { Setup } from "@/lib/onboarding";
+import type { ProfileStats } from "@/lib/analytics";
+import { leadDate, type Lead } from "@/lib/leads";
 import { linkPrefix } from "@/lib/link";
 import { photoUrl } from "@/lib/data";
 import type { Profile, Property } from "@/lib/validation";
@@ -22,19 +26,25 @@ const statusLabel: Record<Property["status"], string> = {
 };
 
 /* Visão geral do corretor. Tudo o que aparece aqui vem do banco: perfil,
-   imóveis e fotos. Visitas e contatos ainda não são medidos. */
+   imóveis, eventos e contatos. Nenhum número é estimado. */
 export function Dashboard({
   firstName,
   profile,
   properties,
   slug,
   setup,
+  stats,
+  leads,
+  unreadLeads,
 }: {
   firstName: string;
   profile: Profile | null;
   properties: Property[];
   slug: string;
   setup: Setup;
+  stats: ProfileStats;
+  leads: Lead[];
+  unreadLeads: number;
 }) {
   const live = Boolean(profile);
   const published = properties.filter((p) => p.status === "publicado").length;
@@ -47,6 +57,8 @@ export function Dashboard({
   const propertyHref = profile
     ? "/painel/imoveis/novo"
     : "/painel/perfil#apresentacao";
+  const propertyName = (id: string | null) =>
+    properties.find((p) => p.id === id)?.title || "Contato pela sua página";
 
   return (
     <>
@@ -60,7 +72,11 @@ export function Dashboard({
         <section className="dash-card dash-preview">
           <div className="dash-preview-media">
             {profile?.cover ? (
-              <img className="dash-cover" src={photoUrl(profile.cover)} alt="" />
+              <img
+                className="dash-cover"
+                src={photoUrl(profile.cover)}
+                alt=""
+              />
             ) : (
               <div className="dash-cover dash-cover-empty" aria-hidden="true" />
             )}
@@ -91,7 +107,19 @@ export function Dashboard({
             <div className="dash-link">
               <code>{address}</code>
               {live && slug ? (
-                <Share url={`/${slug}`} copy />
+                <>
+                  <Share url={`/${slug}`} copy />
+                  <a
+                    className="btn dash-qr"
+                    href={`/api/qr?slug=${encodeURIComponent(slug)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Abrir QR code da página"
+                    title="QR code da página"
+                  >
+                    <QrCode />
+                  </a>
+                </>
               ) : (
                 <span className="dash-link-locked">Disponível ao salvar</span>
               )}
@@ -168,7 +196,8 @@ export function Dashboard({
             </div>
             <p className="dash-sub">
               {published} {published === 1 ? "publicado" : "publicados"} ·{" "}
-              {drafts} {drafts === 1 ? "rascunho" : "rascunhos"}
+              {drafts} {drafts === 1 ? "rascunho" : "rascunhos"} · {photos}{" "}
+              {photos === 1 ? "foto" : "fotos"}
             </p>
             {recent.length ? (
               <>
@@ -182,7 +211,10 @@ export function Dashboard({
                         {p.images[0]?.url ? (
                           <img src={p.images[0].url} alt="" />
                         ) : (
-                          <span className="dash-property-empty" aria-hidden="true">
+                          <span
+                            className="dash-property-empty"
+                            aria-hidden="true"
+                          >
                             <House />
                           </span>
                         )}
@@ -227,28 +259,88 @@ export function Dashboard({
           <section className="dash-card dash-stats">
             <div className="dash-section-head">
               <div>
-                <span className="eyebrow">Números</span>
+                <span className="eyebrow">Últimos 30 dias</span>
                 <h2>Como está sua página</h2>
               </div>
             </div>
             <dl className="stats-row">
               <div>
-                <dt>Publicados</dt>
-                <dd>{published}</dd>
+                <dt>Visitas</dt>
+                <dd>{stats.views}</dd>
               </div>
               <div>
-                <dt>Rascunhos</dt>
-                <dd>{drafts}</dd>
+                <dt>Imóveis vistos</dt>
+                <dd>{stats.propertyViews}</dd>
               </div>
               <div>
-                <dt>Fotos</dt>
-                <dd>{photos}</dd>
+                <dt>Cliques no WhatsApp</dt>
+                <dd>{stats.whatsappClicks}</dd>
               </div>
             </dl>
+            {stats.byProperty.length > 0 && (
+              <div className="dash-top">
+                <span className="eyebrow">Imóveis com mais interesse</span>
+                <ul>
+                  {stats.byProperty.slice(0, 3).map((item) => (
+                    <li key={item.id}>
+                      <Link href={`/painel/imoveis/${item.id}`}>
+                        <span>{propertyName(item.id)}</span>
+                        <small>
+                          {item.views} {item.views === 1 ? "visita" : "visitas"}{" "}
+                          · {item.clicks}{" "}
+                          {item.clicks === 1 ? "clique" : "cliques"}
+                        </small>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <p className="dash-note">
-              Contagens reais da sua página. Visitas e contatos ainda não são
-              medidos.
+              {profile
+                ? `Visitas e cliques reais, sem cookies. Compartilhamentos: ${stats.shares}.`
+                : "Publique sua página para começar a medir visitas e cliques."}
             </p>
+          </section>
+
+          <section className="dash-card dash-leads">
+            <div className="dash-section-head">
+              <div>
+                <span className="eyebrow">Contatos</span>
+                <h2>Mensagens recebidas</h2>
+              </div>
+              {unreadLeads > 0 && (
+                <span className="dash-count">
+                  {unreadLeads} {unreadLeads === 1 ? "nova" : "novas"}
+                </span>
+              )}
+            </div>
+            {leads.length ? (
+              <ul className="dash-lead-list">
+                {leads.slice(0, 3).map((lead) => (
+                  <li key={lead.id} className={lead.read_at ? "" : "is-unread"}>
+                    <div>
+                      <strong>{lead.name}</strong>
+                      <small>{propertyName(lead.property_id)}</small>
+                    </div>
+                    <p>{lead.message}</p>
+                    <span>{leadDate(lead.created_at)}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="dash-empty">
+                <Inbox />
+                <p>
+                  Quando alguém deixar uma mensagem na sua página, ela aparece
+                  aqui.
+                </p>
+              </div>
+            )}
+            <Link className="btn" href="/painel/contatos">
+              Abrir caixa de entrada
+              <ArrowRight />
+            </Link>
           </section>
         </div>
       </div>

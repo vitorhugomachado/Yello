@@ -7,7 +7,7 @@ import { Property, propertySchema, money } from "@/lib/validation";
 import { PhotoManager } from "./photo-manager";
 import { Gallery } from "./gallery";
 import { Facts } from "./storefront";
-import { api } from "./ui";
+import { api, Share } from "./ui";
 
 type FieldKey = keyof typeof propertySchema.shape;
 type FieldSpec = {
@@ -46,6 +46,22 @@ const fields: Record<FieldKey, FieldSpec> = {
   bedrooms: { key: "bedrooms", label: "Número de quartos", kind: "number" },
   bathrooms: { key: "bathrooms", label: "Número de banheiros", kind: "number" },
   parking: { key: "parking", label: "Vagas de garagem", kind: "number" },
+  condo: {
+    key: "condo",
+    label: "Condomínio (R$/mês)",
+    kind: "number",
+  },
+  iptu: { key: "iptu", label: "IPTU (R$/ano)", kind: "number" },
+  amenities: {
+    key: "amenities",
+    label: "Comodidades",
+    max: 500,
+  },
+  video: {
+    key: "video",
+    label: "Vídeo ou tour (link HTTPS)",
+    max: 500,
+  },
   neighborhood: {
     key: "neighborhood",
     label: "Bairro",
@@ -88,6 +104,10 @@ const empty: Property = {
   bedrooms: 0,
   bathrooms: 0,
   parking: 0,
+  condo: 0,
+  iptu: 0,
+  amenities: "",
+  video: "",
   status: "rascunho",
   images: [],
   id: "",
@@ -97,9 +117,11 @@ const empty: Property = {
 export function PropertyEditor({
   initial,
   demo = false,
+  profileSlug = "",
 }: {
   initial?: Property;
   demo?: boolean;
+  profileSlug?: string;
 }) {
   const router = useRouter();
   const [p, setP] = useState<Property>(initial || empty),
@@ -110,6 +132,7 @@ export function PropertyEditor({
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState(""),
     [error, setError] = useState(""),
+    [publishedUrl, setPublishedUrl] = useState(""),
     [photosOpen, setPhotosOpen] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null),
     photoDialog = useRef<HTMLDialogElement>(null);
@@ -159,6 +182,7 @@ export function PropertyEditor({
     setBusy(true);
     setError("");
     setMessage("");
+    setPublishedUrl("");
     try {
       const parsed = propertySchema.safeParse({ ...p, status });
       if (!parsed.success) {
@@ -186,6 +210,8 @@ export function PropertyEditor({
           ? "Imóvel publicado na sua vitrine."
           : "Alterações salvas.",
       );
+      if (status === "publicado" && profileSlug)
+        setPublishedUrl(`/${profileSlug}/imovel/${result.data.id}`);
       router.refresh();
       return true;
     } catch (e) {
@@ -200,7 +226,7 @@ export function PropertyEditor({
     const value = p[key];
     const text =
       spec.options?.find(([v]) => v === value)?.[1] ||
-      (key === "price" && Number(value) > 0
+      (["price", "condo", "iptu"].includes(key) && Number(value) > 0
         ? money(Number(value))
         : String(value || ""));
     return (
@@ -273,6 +299,8 @@ export function PropertyEditor({
         </div>
       </section>
       {group("Preço do imóvel", ["price"])}
+      {group("Custos do imóvel", ["condo", "iptu"])}
+      {group("Comodidades e tour", ["amenities", "video"])}
       {group("Descrição do imóvel", ["title", "description"])}
       <section className="editor-section">
         <h2>Dados de contato</h2>
@@ -323,6 +351,23 @@ export function PropertyEditor({
       {message && (
         <div role="status" className="notice">
           {message}
+        </div>
+      )}
+      {publishedUrl && (
+        <div className="notice published-success">
+          <strong>Seu imóvel já está no ar.</strong>
+          <p>Abra a página como um cliente veria ou compartilhe o link.</p>
+          <div className="row wrap">
+            <a
+              className="btn primary"
+              href={publishedUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Ver na página
+            </a>
+            <Share url={publishedUrl} title={p.title} copy />
+          </div>
         </div>
       )}
       <div className="editor-actions">
@@ -414,7 +459,11 @@ export function PropertyEditor({
                   inputMode={
                     fields[active].kind === "number" ? "decimal" : "text"
                   }
-                  step={active === "price" || active === "area" ? "0.01" : "1"}
+                  step={
+                    ["price", "area", "condo", "iptu"].includes(active)
+                      ? "0.01"
+                      : "1"
+                  }
                   min={0}
                   maxLength={fields[active].max}
                   value={draft}
@@ -432,6 +481,10 @@ export function PropertyEditor({
                   </span>
                   <span>{draft.length}/5000</span>
                 </>
+              ) : active === "amenities" ? (
+                <span>Separe por vírgulas: varanda, piscina, academia.</span>
+              ) : active === "video" ? (
+                <span>Use um link HTTPS do YouTube, Vimeo ou de um tour.</span>
               ) : (
                 <span>
                   {fields[active].required

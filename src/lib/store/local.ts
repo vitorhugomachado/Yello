@@ -6,9 +6,17 @@ import { cookies } from "next/headers";
 import { randomUUID } from "node:crypto";
 import * as account from "../local/auth";
 import { all, get, run, transaction } from "../local/db";
-import { mediaVisible, readMedia, removeMedia, writeMedia } from "../local/media";
+import {
+  mediaVisible,
+  readMedia,
+  removeMedia,
+  writeMedia,
+} from "../local/media";
 import { duplicateError } from "../store";
 import type { ProfileInput, PropertyInput, Session, Store } from "../store";
+import { aggregateEvents } from "../analytics";
+import type { AnalyticsEvent, EventKind } from "../analytics";
+import type { Lead } from "../leads";
 import type { Photo, Profile, Property } from "../validation";
 
 const SESSION_DAYS = 30;
@@ -60,6 +68,19 @@ function unique(error: unknown) {
   return /unique/i.test(message) ? duplicateError() : error;
 }
 
+/** Um endereço conta como ocupado se já é perfil, reserva ou redirect. */
+function slugIsFree(slug: string) {
+  return !get(
+    `select 1 from profiles where slug = ?
+     union all select 1 from slug_reservations where slug = ?
+     union all select 1 from slug_redirects where slug = ?
+     limit 1`,
+    slug,
+    slug,
+    slug,
+  );
+}
+
 async function session(): Promise<Session | null> {
   const store = await cookies();
   const token = store.get(account.SESSION_COOKIE)?.value;
@@ -94,6 +115,10 @@ const columns = (data: PropertyInput) => [
   data.bedrooms,
   data.bathrooms,
   data.parking,
+  data.condo,
+  data.iptu,
+  data.amenities,
+  data.video,
   data.status,
 ];
 
@@ -105,11 +130,27 @@ export function store(): Store {
     async signUp({ email, password, link }) {
       if (account.accountByEmail(email))
         throw Error("Este e-mail já está cadastrado. Entre com sua senha.");
-      const user = account.createAccount(
-        email,
-        password,
-        link ? { link } : {},
-      );
+      if (link && !slugIsFree(link)) throw duplicateError();
+      let user;
+      try {
+        user = transaction(() => {
+          const created = account.createAccount(
+            email,
+            password,
+            link ? { link } : {},
+          );
+          /* A reserva nasce junto com a conta: ou as duas existem, ou nenhuma. */
+          if (link)
+            run(
+              "insert into slug_reservations (slug, user_id) values (?, ?)",
+              link,
+              created.id,
+            );
+          return created;
+        });
+      } catch (error) {
+        throw unique(error);
+      }
       await open(user.id);
       /* Sem e-mail para confirmar no modo local: já entra no painel. */
       return { next: "/painel" };
@@ -149,7 +190,9 @@ export function store(): Store {
       }
       const user = await session();
       if (!user)
-        throw Error("Abra o link enviado ao seu e-mail para redefinir a senha.");
+        throw Error(
+          "Abra o link enviado ao seu e-mail para redefinir a senha.",
+        );
       account.setPassword(user.id, password);
       await open(user.id);
     },
@@ -179,12 +222,14 @@ export function store(): Store {
     },
 
     profileSlug: async (id) =>
-      get<{ slug: string }>("select slug from profiles where id = ?", id)?.slug ||
-      null,
+      get<{ slug: string }>("select slug from profiles where id = ?", id)
+        ?.slug || null,
 
     profileWhatsapp: async (id) =>
-      get<{ whatsapp: string }>("select whatsapp from profiles where id = ?", id)
-        ?.whatsapp ?? null,
+      get<{ whatsapp: string }>(
+        "select whatsapp from profiles where id = ?",
+        id,
+      )?.whatsapp ?? null,
 
     profileBySlug: async (slug) => {
       const row = get<ProfileRow>(
@@ -195,33 +240,90 @@ export function store(): Store {
     },
 
     profileId: async (slug) =>
-      get<{ id: string }>("select id from profiles where slug = ?", slug.toLowerCase())
-        ?.id || null,
+      get<{ id: string }>(
+        "select id from profiles where slug = ?",
+        slug.toLowerCase(),
+      )?.id || null,
+
+    slugAvailable: async (slug) => slugIsFree(slug.toLowerCase()),
+
+    slugRedirect: async (slug) =>
+      get<{ slug: string }>(
+        `select p.slug from slug_redirects r
+         join profiles p on p.id = r.profile_id
+         where r.slug = ?`,
+        slug.toLowerCase(),
+      )?.slug || null,
 
     async saveProfile(id, data: ProfileInput) {
       try {
-        run(
-          `insert into profiles (id, slug, name, bio, city, region, registration, whatsapp, theme, socials, avatar, cover)
-           values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-           on conflict (id) do update set
-             slug = excluded.slug, name = excluded.name, bio = excluded.bio,
-             city = excluded.city, region = excluded.region,
-             registration = excluded.registration, whatsapp = excluded.whatsapp,
-             theme = excluded.theme, socials = excluded.socials,
-             avatar = excluded.avatar, cover = excluded.cover`,
-          id,
-          data.slug,
-          data.name,
-          data.bio,
-          data.city,
-          data.region,
-          data.registration,
-          data.whatsapp,
-          data.theme,
-          JSON.stringify(data.socials),
-          data.avatar,
-          data.cover,
-        );
+        transaction(() => {
+          const old = get<{ slug: string }>(
+            "select slug from profiles where id = ?",
+            id,
+          )?.slug;
+          if (old !== data.slug) {
+            const taken = get(
+              `select 1 from profiles where slug = ? and id <> ?
+               union all select 1 from slug_reservations where slug = ? and user_id <> ?
+               union all select 1 from slug_redirects where slug = ? and profile_id <> ?
+               limit 1`,
+              data.slug,
+              id,
+              data.slug,
+              id,
+              data.slug,
+              id,
+            );
+            if (taken) throw duplicateError();
+            /* O endereço que sai vira redirect; o que entra fica reservado. */
+            if (old)
+              run(
+                `insert into slug_redirects (slug, profile_id) values (?, ?)
+                 on conflict (slug) do update set profile_id = excluded.profile_id`,
+                old,
+                id,
+              );
+            run(
+              "delete from slug_reservations where user_id = ? and slug <> ?",
+              id,
+              data.slug,
+            );
+            run(
+              `insert into slug_reservations (slug, user_id) values (?, ?)
+               on conflict (slug) do nothing`,
+              data.slug,
+              id,
+            );
+            run(
+              "delete from slug_redirects where slug = ? and profile_id = ?",
+              data.slug,
+              id,
+            );
+          }
+          run(
+            `insert into profiles (id, slug, name, bio, city, region, registration, whatsapp, theme, socials, avatar, cover)
+             values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             on conflict (id) do update set
+               slug = excluded.slug, name = excluded.name, bio = excluded.bio,
+               city = excluded.city, region = excluded.region,
+               registration = excluded.registration, whatsapp = excluded.whatsapp,
+               theme = excluded.theme, socials = excluded.socials,
+               avatar = excluded.avatar, cover = excluded.cover`,
+            id,
+            data.slug,
+            data.name,
+            data.bio,
+            data.city,
+            data.region,
+            data.registration,
+            data.whatsapp,
+            data.theme,
+            JSON.stringify(data.socials),
+            data.avatar,
+            data.cover,
+          );
+        });
       } catch (error) {
         throw unique(error);
       }
@@ -258,8 +360,8 @@ export function store(): Store {
       if (!id) {
         const created = randomUUID();
         run(
-          `insert into properties (id, owner_id, title, description, purpose, type, price, neighborhood, city, state, area, bedrooms, bathrooms, parking, status)
-           values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `insert into properties (id, owner_id, title, description, purpose, type, price, neighborhood, city, state, area, bedrooms, bathrooms, parking, condo, iptu, amenities, video, status)
+           values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           created,
           owner,
           ...columns(data),
@@ -267,7 +369,7 @@ export function store(): Store {
         return { id: created };
       }
       const result = run(
-        `update properties set title = ?, description = ?, purpose = ?, type = ?, price = ?, neighborhood = ?, city = ?, state = ?, area = ?, bedrooms = ?, bathrooms = ?, parking = ?, status = ?
+        `update properties set title = ?, description = ?, purpose = ?, type = ?, price = ?, neighborhood = ?, city = ?, state = ?, area = ?, bedrooms = ?, bathrooms = ?, parking = ?, condo = ?, iptu = ?, amenities = ?, video = ?, status = ?
          where id = ? and owner_id = ?`,
         ...columns(data),
         id,
@@ -367,6 +469,94 @@ export function store(): Store {
           ),
         );
       });
+    },
+
+    /* Métricas e contatos */
+    async recordEvent({ profileId, propertyId, kind, source }) {
+      run(
+        "insert into events (profile_id, property_id, kind, source) values (?, ?, ?, ?)",
+        profileId,
+        propertyId || null,
+        kind,
+        (source || "").slice(0, 80),
+      );
+    },
+
+    async profileStats(owner, days = 30) {
+      const since = new Date(
+        Date.now() - Math.max(1, days) * 86400000,
+      ).toISOString();
+      const rows = all<{ kind: EventKind; property_id: string | null }>(
+        "select kind, property_id from events where profile_id = ? and created_at >= ?",
+        owner,
+        since,
+      );
+      return aggregateEvents(rows as AnalyticsEvent[]);
+    },
+
+    async saveLead({ profileId, propertyId, name, phone, message, source }) {
+      run(
+        `insert into leads (id, profile_id, property_id, name, phone, message, source)
+         values (?, ?, ?, ?, ?, ?, ?)`,
+        randomUUID(),
+        profileId,
+        propertyId || null,
+        name,
+        phone,
+        message,
+        (source || "").slice(0, 80),
+      );
+    },
+
+    leads: async (owner) =>
+      all<Lead>(
+        "select * from leads where profile_id = ? order by created_at desc",
+        owner,
+      ),
+
+    unreadLeads: async (owner) =>
+      Number(
+        get<{ total: number }>(
+          "select count(*) as total from leads where profile_id = ? and read_at is null",
+          owner,
+        )?.total || 0,
+      ),
+
+    async markLeadRead(owner, id) {
+      run(
+        "update leads set read_at = ? where id = ? and profile_id = ? and read_at is null",
+        new Date().toISOString(),
+        id,
+        owner,
+      );
+    },
+
+    async removeLead(owner, id) {
+      run("delete from leads where id = ? and profile_id = ?", id, owner);
+    },
+
+    async deleteAccount(password) {
+      const user = await session();
+      if (!user) throw Error("Entre novamente para continuar.");
+      const found = account.accountByEmail(user.email);
+      if (!found || !account.verifyPassword(password, found.hash, found.salt))
+        throw Error("Senha incorreta.");
+      const profile = get<ProfileRow>(
+        "select * from profiles where id = ?",
+        user.id,
+      );
+      const paths = [
+        ...(profile?.avatar ? [profile.avatar] : []),
+        ...(profile?.cover ? [profile.cover] : []),
+        ...all<{ path: string }>(
+          "select path from images where owner_id = ?",
+          user.id,
+        ).map((row) => row.path),
+      ];
+      if (paths.length) removeMedia(paths);
+      run("delete from users where id = ?", user.id);
+      const store = await cookies();
+      store.delete(account.SESSION_COOKIE);
     },
 
     /* Arquivos */

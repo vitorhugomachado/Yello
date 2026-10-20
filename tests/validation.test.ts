@@ -13,6 +13,14 @@ import {
   whatsappUrl,
   reserved,
 } from "../src/lib/validation";
+import { demoProperties } from "../src/lib/demo";
+import { isBot, isPrefetch } from "../src/lib/analytics";
+import {
+  defaultFilters,
+  filterProperties,
+  filtersQuery,
+  parseFilters,
+} from "../src/lib/filters";
 describe("Public identifiers and contacts", () => {
   it("reserves all application routes and rejects path tricks", () => {
     for (const s of [
@@ -50,9 +58,7 @@ describe("Public identifiers and contacts", () => {
   it("derives a readable name from the address for the signup preview", () => {
     expect(linkName("marina-oliveira")).toBe("Marina Oliveira");
     expect(linkName("marina-de-oliveira")).toBe("Marina de Oliveira");
-    expect(linkName("marina-oliveira-imoveis")).toBe(
-      "Marina Oliveira Imóveis",
-    );
+    expect(linkName("marina-oliveira-imoveis")).toBe("Marina Oliveira Imóveis");
     expect(linkName("sao-jose")).toBe("São José");
     expect(linkName("")).toBe("");
   });
@@ -123,5 +129,84 @@ describe("Public identifiers and contacts", () => {
       expect(propertySchema.safeParse({ ...good, ...patch }).success).toBe(
         false,
       );
+  });
+});
+
+describe("Storefront filters", () => {
+  it("ignores accents and matches neighborhood or city", () => {
+    const byCity = filterProperties(demoProperties, {
+      ...defaultFilters,
+      neighborhood: "florianopolis",
+    });
+    expect(byCity).toHaveLength(demoProperties.length);
+    const byNeighborhood = filterProperties(demoProperties, {
+      ...defaultFilters,
+      neighborhood: "campeche",
+    });
+    expect(byNeighborhood.map((property) => property.id)).toContain(
+      "casa-campeche",
+    );
+    expect(byNeighborhood.map((property) => property.id)).not.toContain(
+      "apto-jardim",
+    );
+  });
+
+  it("combines purpose, price, bedrooms and sorting", () => {
+    const rent = filterProperties(demoProperties, {
+      ...defaultFilters,
+      purpose: "aluguel",
+    });
+    expect(rent.every((property) => property.purpose === "aluguel")).toBe(true);
+    const cheap = filterProperties(demoProperties, {
+      ...defaultFilters,
+      max: "1000000",
+      bedrooms: "3",
+      sort: "menor-preco",
+    });
+    expect(cheap.length).toBeGreaterThan(0);
+    expect(cheap.every((property) => property.price <= 1_000_000)).toBe(true);
+    expect(cheap.every((property) => property.bedrooms >= 3)).toBe(true);
+    expect(cheap.map((property) => property.price)).toEqual(
+      [...cheap].map((property) => property.price).sort((a, b) => a - b),
+    );
+  });
+
+  it("reads and writes only valid, shareable URL filters", () => {
+    const filters = parseFilters({
+      finalidade: "venda",
+      tipo: "casa",
+      precoMin: "R$ 500.000",
+      precoMax: "1.500.000",
+      quartos: "4",
+      bairro: "Campeche",
+      ordem: "maior-preco",
+    });
+    expect(filters).toMatchObject({
+      purpose: "venda",
+      type: "casa",
+      min: "500000",
+      max: "1500000",
+      bedrooms: "4",
+      neighborhood: "Campeche",
+      sort: "maior-preco",
+    });
+    expect(filtersQuery(filters)).toBe(
+      "?finalidade=venda&tipo=casa&precoMin=500000&precoMax=1500000&quartos=4&bairro=Campeche&ordem=maior-preco",
+    );
+    expect(
+      parseFilters({ finalidade: "qualquer", precoMin: "abc", ordem: "x" }),
+    ).toMatchObject({ purpose: "todos", min: "", max: "", sort: "recentes" });
+  });
+});
+
+describe("Analytics guards", () => {
+  it("does not count previews, bots or Next.js prefetches as visits", () => {
+    expect(isBot("WhatsApp/2.23.20.0 A")).toBe(true);
+    expect(
+      isBot("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)"),
+    ).toBe(false);
+    expect(isPrefetch(new Headers({ "next-router-prefetch": "1" }))).toBe(true);
+    expect(isPrefetch(new Headers({ purpose: "prefetch" }))).toBe(true);
+    expect(isPrefetch(new Headers())).toBe(false);
   });
 });

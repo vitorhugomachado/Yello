@@ -1,4 +1,5 @@
 import { dataBackend, localMode, store } from "@/lib/store";
+import { rateLimit, tooMany } from "@/lib/rate-limit";
 import { slugSchema } from "@/lib/validation";
 import { z } from "zod";
 export async function POST(req: Request) {
@@ -12,6 +13,8 @@ export async function POST(req: Request) {
     );
   if (req.headers.get("origin") !== new URL(req.url).origin)
     return Response.json({ error: "Origem inválida" }, { status: 403 });
+  const limit = rateLimit(req, "auth", 20, 60_000);
+  if (!limit.ok) return tooMany(limit.retryAfter);
   try {
     const { action, email, password, link, token } = await req.json();
     const db = store();
@@ -27,6 +30,8 @@ export async function POST(req: Request) {
       if (action !== "recover") z.string().min(8).max(128).parse(password);
       if (action === "signup") {
         const wanted = slugSchema.safeParse(link);
+        if (wanted.success && !(await db.slugAvailable(wanted.data)))
+          throw Error("Este endereço já está em uso. Escolha outro.");
         answer = await db.signUp({
           email,
           password,
@@ -47,10 +52,14 @@ export async function POST(req: Request) {
           e instanceof z.ZodError
             ? "Confira o e-mail e use uma senha com pelo menos 8 caracteres."
             : /* No modo local mostramos o motivo real; no Supabase a resposta
-                 continua genérica para não revelar se o e-mail existe. */
-              localMode() && e instanceof Error
-              ? e.message
-              : "Não foi possível concluir. Confira os dados ou solicite um novo link.",
+                 continua genérica para não revelar se o e-mail existe, exceto
+                 quando o próprio banco recusa a reserva do endereço. */
+              e instanceof Error &&
+                /endereço|reserved|duplicate/i.test(e.message)
+              ? "Este endereço já está em uso. Escolha outro."
+              : localMode() && e instanceof Error
+                ? e.message
+                : "Não foi possível concluir. Confira os dados ou solicite um novo link.",
       },
       { status: 400 },
     );
