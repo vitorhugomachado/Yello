@@ -2640,6 +2640,13 @@ svg {
 .auth-card-waves {
   position: absolute;
   inset: 0;
+  z-index: 0;
+}
+/* Marca, texto e atalho ficam acima do desenho: posicionados, eles vencem a
+   camada decorativa na ordem de pintura. */
+.auth-card-panel > :not(.auth-card-waves) {
+  position: relative;
+  z-index: 1;
 }
 .auth-card-panel .yello-brand {
   font-size: 26px;
