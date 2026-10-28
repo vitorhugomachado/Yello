@@ -1,5 +1,6 @@
 import { dataBackend, store } from "@/lib/store";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
+import { isSameOrigin } from "@/lib/request-origin";
 import { z } from "zod";
 
 const schema = z.object({
@@ -12,7 +13,7 @@ const schema = z.object({
 export async function POST(request: Request) {
   if (!dataBackend())
     return Response.json({ error: "Indisponível." }, { status: 503 });
-  if (request.headers.get("origin") !== new URL(request.url).origin)
+  if (!isSameOrigin(request))
     return Response.json({ error: "Origem inválida." }, { status: 403 });
   const limit = rateLimit(request, "events", 40, 60_000);
   if (!limit.ok) return tooMany(limit.retryAfter);

@@ -90,12 +90,12 @@ export function AuthForm({
               id="password"
               name="password"
               type={show ? "text" : "password"}
-              minLength={8}
+              minLength={mode === "login" ? undefined : 8}
               maxLength={128}
               autoComplete={
                 mode === "login" ? "current-password" : "new-password"
               }
-              aria-describedby="password-hint"
+              aria-describedby={mode === "login" ? undefined : "password-hint"}
               required
             />
             <button
@@ -108,7 +108,9 @@ export function AuthForm({
               {show ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
             </button>
           </span>
-          <small id="password-hint">Pelo menos 8 caracteres.</small>
+          {mode !== "login" && (
+            <small id="password-hint">Pelo menos 8 caracteres.</small>
+          )}
         </div>
       )}
       {error && (

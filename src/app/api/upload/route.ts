@@ -1,5 +1,6 @@
 import { dataBackend, store } from "@/lib/store";
 import { optimizeImage } from "@/lib/images";
+import { isSameOrigin } from "@/lib/request-origin";
 export const runtime = "nodejs";
 export async function POST(req: Request) {
   if (!dataBackend())
@@ -10,7 +11,7 @@ export async function POST(req: Request) {
       },
       { status: 503 },
     );
-  if (req.headers.get("origin") !== new URL(req.url).origin)
+  if (!isSameOrigin(req))
     return Response.json({ error: "Origem inválida" }, { status: 403 });
   const db = store();
   const user = await db.user();

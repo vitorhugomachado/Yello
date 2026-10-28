@@ -1,4 +1,5 @@
 import { dataBackend, store } from "@/lib/store";
+import { isSameOrigin } from "@/lib/request-origin";
 import { z } from "zod";
 
 const input = z.object({ action: z.literal("welcome-seen") });
@@ -14,7 +15,7 @@ export async function POST(req: Request) {
       },
       { status: 503 },
     );
-  if (req.headers.get("origin") !== new URL(req.url).origin)
+  if (!isSameOrigin(req))
     return Response.json({ error: "Origem inválida" }, { status: 403 });
   const db = store();
   const user = await db.user();

@@ -152,7 +152,7 @@
   margin: 0 auto;
   padding: 32px 56px 24px;
   display: grid;
-  grid-template-columns: minmax(280px, 430px) auto;
+  grid-template-columns: minmax(280px, 430px) 408px;
   align-items: center;
   justify-content: center;
   gap: clamp(50px, 8vw, 132px);
@@ -174,7 +174,6 @@
 }
 
 .ym-kicker i,
-.ym-live i,
 .ym-sheet-kicker i {
   width: 6px;
   height: 6px;
@@ -250,24 +249,24 @@
 }
 
 .ym-device-label {
-  width: 100%;
+  width: 408px;
   margin-bottom: 9px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   color: rgba(255, 255, 255, 0.39);
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
+/* O frame tem 408 × 862 por fora e uma tela real de 390 × 844 por dentro.
+   A tela nunca é comprimida: no desktop ela mantém a largura de um iPhone. */
 .ym-device {
-  --ym-device-h: min(820px, calc(100dvh - 190px));
   position: relative;
-  width: calc(var(--ym-device-h) * 0.462);
-  height: var(--ym-device-h);
-  min-height: 540px;
+  width: 408px;
+  height: 862px;
   padding: 8px;
   border: 1px solid rgba(255, 255, 255, 0.17);
   border-radius: 48px;
@@ -291,10 +290,10 @@
 }
 
 .ym-device-hint {
-  width: 100%;
+  width: 408px;
   margin: 11px 0 0;
   color: rgba(255, 255, 255, 0.4);
-  font-size: 9px;
+  font-size: 10px;
   text-align: center;
 }
 
@@ -328,6 +327,19 @@
   overflow: hidden;
   background: var(--ym-paper);
   color: var(--ym-ink);
+}
+
+/* Base limpa sob o dock flutuante, sem deixar o conteúdo cortado na borda. */
+.ym-screen::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 29;
+  height: max(10px, env(safe-area-inset-bottom, 0px));
+  background: var(--ym-paper);
+  pointer-events: none;
 }
 
 .ym-statusbar {
@@ -376,12 +388,12 @@
   position: sticky;
   top: 0;
   z-index: 8;
-  min-height: 49px;
-  padding: 7px 16px 9px;
+  min-height: 56px;
+  padding: 9px 16px 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
   background: rgba(243, 241, 233, 0.9);
   backdrop-filter: blur(14px);
 }
@@ -391,59 +403,47 @@
   align-items: center;
   gap: 3px;
   color: var(--ym-ink);
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 700;
   letter-spacing: -0.09em;
   line-height: 1;
 }
 
 .ym-brand img {
-  width: 21px;
-  height: 21px;
+  width: 22px;
+  height: 22px;
   margin-left: -1px;
-}
-
-.ym-appbar-stamp {
-  position: absolute;
-  top: 18px;
-  left: 50%;
-  color: #94958b;
-  font-size: 7px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  transform: translateX(-50%);
 }
 
 .ym-appbar-side {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
 }
 
 .ym-online {
-  min-height: 25px;
-  padding: 0 9px;
+  min-height: 28px;
+  padding: 0 10px;
   border-radius: 20px;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   background: var(--ym-ink);
   color: var(--ym-white);
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 800;
 }
 
 .ym-online i {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: var(--ym-yellow);
 }
 
 .ym-avatar {
-  width: 31px;
-  height: 31px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   overflow: hidden;
   flex: 0 0 auto;
@@ -459,18 +459,18 @@
   place-items: center;
   object-fit: cover;
   color: var(--ym-ink);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
 }
 
 .ym-greeting {
-  padding: 13px 18px 20px;
+  padding: 16px 16px 10px;
 }
 
 .ym-date {
-  margin: 0 0 10px;
+  margin: 0 0 8px;
   color: var(--ym-muted);
-  font-size: 8.5px;
+  font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.13em;
   text-transform: uppercase;
@@ -478,10 +478,10 @@
 
 .ym-greeting h1 {
   margin: 0;
-  font-size: 37px;
+  font-size: 38px;
   font-weight: 600;
   letter-spacing: -0.075em;
-  line-height: 0.95;
+  line-height: 0.96;
 }
 
 .ym-greeting h1 span {
@@ -489,18 +489,18 @@
 }
 
 .ym-greeting-sub {
-  max-width: 285px;
-  margin: 12px 0 0;
+  max-width: 310px;
+  margin: 10px 0 0;
   color: var(--ym-muted);
-  font-size: 10.5px;
-  line-height: 1.55;
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .ym-hero {
   position: relative;
-  height: 286px;
-  margin: 0 14px;
-  border-radius: 20px;
+  height: 204px;
+  margin: 0 16px;
+  border-radius: 22px;
   overflow: hidden;
   isolation: isolate;
   background: #292a25;
@@ -529,29 +529,18 @@
 .ym-hero-top {
   position: relative;
   z-index: 1;
-  padding: 14px 14px 0;
+  padding: 16px 16px 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.ym-live {
-  min-height: 23px;
-  padding: 0 8px;
-  border-radius: 20px;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  background: rgba(10, 10, 10, 0.42);
-  color: var(--ym-white);
-  font-size: 8px;
-  font-weight: 800;
+  justify-content: flex-end;
 }
 
 .ym-handle {
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 8.5px;
+  padding: 5px 9px;
+  border-radius: 20px;
+  background: rgba(10, 10, 10, 0.32);
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 10px;
   font-weight: 700;
 }
 
@@ -561,33 +550,34 @@
   bottom: 0;
   left: 0;
   z-index: 1;
-  padding: 14px;
+  padding: 16px;
 }
 
 .ym-overline,
 .ym-label {
   color: var(--ym-muted);
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 800;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
 .ym-hero .ym-overline {
-  color: rgba(255, 255, 255, 0.58);
+  color: rgba(255, 255, 255, 0.82);
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.45);
 }
 
 .ym-hero h2 {
-  margin: 9px 0 15px;
+  margin: 10px 0 15px;
   color: var(--ym-white);
-  font-size: 31px;
+  font-size: 32px;
   font-weight: 500;
   letter-spacing: -0.07em;
-  line-height: 0.94;
+  line-height: 0.95;
 }
 
 .ym-hero-foot {
-  padding-top: 10px;
+  padding-top: 12px;
   border-top: 1px solid rgba(255, 255, 255, 0.26);
   display: flex;
   align-items: center;
@@ -596,30 +586,34 @@
 }
 
 .ym-address {
-  color: rgba(255, 255, 255, 0.67);
-  font-size: 8px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 11px;
 }
 
 .ym-hero-link {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   color: var(--ym-yellow);
-  font-size: 8.5px;
+  font-size: 11.5px;
   font-weight: 800;
 }
 
 .ym-hero-link svg {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
 }
 
 .ym-metrics,
 .ym-properties {
-  margin: 11px 14px 0;
-  padding: 15px;
-  border-radius: 18px;
+  margin: 12px 16px 0;
+  padding: 12px;
+  border-radius: 20px;
   background: var(--ym-white);
+}
+
+.ym-properties {
+  margin-top: 6px;
 }
 
 .ym-metrics header,
@@ -635,18 +629,18 @@
 .ym-properties h2,
 .ym-inbox h2 {
   margin: 5px 0 0;
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 600;
   letter-spacing: -0.06em;
   line-height: 1;
 }
 
 .ym-sample {
-  padding: 4px 6px;
+  padding: 5px 8px;
   border: 1px solid var(--ym-line);
   border-radius: 20px;
   color: var(--ym-muted);
-  font-size: 7px;
+  font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -654,14 +648,14 @@
 }
 
 .ym-metrics dl {
-  margin: 15px 0 0;
+  margin: 12px 0 0;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .ym-metrics dl > div {
-  min-height: 59px;
-  padding-left: 9px;
+  min-height: 62px;
+  padding-left: 12px;
   border-left: 1px solid var(--ym-line);
   display: flex;
   flex-direction: column;
@@ -676,23 +670,23 @@
 .ym-metrics dt {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   color: var(--ym-muted);
-  font-size: 8px;
+  font-size: 10.5px;
   font-weight: 700;
   line-height: 1.2;
 }
 
 .ym-metrics dt svg {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   stroke-width: 1.8;
 }
 
 .ym-metrics dd {
   margin: 7px 0 0;
   color: var(--ym-ink);
-  font-size: 26px;
+  font-size: 30px;
   font-weight: 500;
   letter-spacing: -0.08em;
   line-height: 0.9;
@@ -701,30 +695,30 @@
 .ym-text-link {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  margin-top: 5px;
+  gap: 5px;
+  margin-top: 4px;
   color: var(--ym-muted);
-  font-size: 8.5px;
+  font-size: 11.5px;
   font-weight: 800;
 }
 
 .ym-text-link svg {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
 }
 
 .ym-property-list {
-  margin-top: 12px;
+  margin-top: 14px;
   display: grid;
 }
 
 .ym-property {
-  min-height: 63px;
-  padding: 8px 0;
+  min-height: 72px;
+  padding: 9px 0;
   border-top: 1px solid var(--ym-line);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 11px;
 }
 
 .ym-property:first-child {
@@ -733,9 +727,9 @@
 
 .ym-property > img,
 .ym-property-empty {
-  width: 45px;
-  height: 45px;
-  border-radius: 8px;
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
   flex: 0 0 auto;
   object-fit: cover;
 }
@@ -748,21 +742,22 @@
 }
 
 .ym-property-empty svg {
-  width: 15px;
-  height: 15px;
+  width: 17px;
+  height: 17px;
 }
 
 .ym-property-copy {
   min-width: 0;
+  flex: 1 1 auto;
   display: grid;
-  gap: 3px;
+  gap: 4px;
 }
 
 .ym-property-copy small {
   color: var(--ym-muted);
-  font-size: 7px;
+  font-size: 9.5px;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
@@ -771,84 +766,93 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--ym-ink);
-  font-size: 10.5px;
+  font-size: 14px;
   font-weight: 700;
+  line-height: 1.2;
 }
 
-.ym-property-copy em {
+.ym-property-meta {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ym-property-meta em {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--ym-muted);
-  font-size: 8px;
+  font-size: 10.5px;
   font-style: normal;
 }
 
 .ym-property-price {
-  margin-left: auto;
   flex: 0 0 auto;
   color: var(--ym-ink);
-  font-size: 9px;
+  font-size: 11.5px;
   font-weight: 800;
 }
 
 .ym-inbox {
-  margin: 11px 14px 0;
-  padding: 15px;
-  border-radius: 18px;
+  margin: 12px 16px 0;
+  padding: 16px;
+  border-radius: 20px;
   background: var(--ym-ink);
   color: var(--ym-white);
 }
 
 .ym-inbox .ym-label {
-  color: rgba(255, 255, 255, 0.45);
+  color: rgba(255, 255, 255, 0.48);
 }
 
 .ym-inbox h2 {
   color: var(--ym-white);
-  font-size: 19px;
+  font-size: 22px;
 }
 
 .ym-inbox-count {
-  padding: 4px 7px;
+  padding: 5px 8px;
   border-radius: 20px;
   background: var(--ym-yellow);
   color: var(--ym-ink);
-  font-size: 7px;
+  font-size: 9px;
   font-weight: 800;
   white-space: nowrap;
 }
 
 .ym-lead {
-  margin-top: 11px;
-  padding-top: 11px;
+  margin-top: 14px;
+  padding-top: 14px;
   border-top: 1px solid rgba(255, 255, 255, 0.14);
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: 10px;
 }
 
 .ym-lead-avatar {
-  width: 25px;
-  height: 25px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   display: grid;
   place-items: center;
   flex: 0 0 auto;
   background: var(--ym-yellow);
   color: var(--ym-ink);
-  font-size: 7px;
+  font-size: 9px;
   font-weight: 800;
 }
 
 .ym-lead > div {
   min-width: 0;
   display: grid;
-  gap: 3px;
+  gap: 4px;
 }
 
 .ym-lead strong {
-  font-size: 9.5px;
+  font-size: 13px;
   font-weight: 800;
 }
 
@@ -856,39 +860,39 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: rgba(255, 255, 255, 0.48);
-  font-size: 7.5px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 10.5px;
 }
 
 .ym-lead p {
   margin: 3px 0 1px;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 8.5px;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 12px;
   line-height: 1.45;
 }
 
 .ym-lead time {
-  color: rgba(255, 255, 255, 0.38);
-  font-size: 7.5px;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 10px;
 }
 
 .ym-inbox-link {
-  margin-top: 12px;
+  margin-top: 14px;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   color: var(--ym-yellow);
-  font-size: 8.5px;
+  font-size: 11.5px;
   font-weight: 800;
 }
 
 .ym-inbox-link svg {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
 }
 
 .ym-bottom-space {
-  height: 96px;
+  height: 112px;
 }
 
 /* Barra contextual + menu */
@@ -899,9 +903,9 @@
   bottom: calc(12px + env(safe-area-inset-bottom, 0px));
   left: 12px;
   z-index: 30;
-  min-height: 63px;
-  padding: 7px 7px 7px 10px;
-  border-radius: 20px;
+  min-height: 68px;
+  padding: 8px 8px 8px 12px;
+  border-radius: 22px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -915,13 +919,13 @@
   padding: 0 2px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
   color: var(--ym-white);
 }
 
 .ym-dock-icon {
-  width: 37px;
-  height: 37px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -931,8 +935,8 @@
 }
 
 .ym-dock-icon svg {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   stroke-width: 1.8;
 }
 
@@ -943,8 +947,8 @@
 }
 
 .ym-dock-home small {
-  color: rgba(255, 255, 255, 0.48);
-  font-size: 7.5px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.04em;
 }
@@ -953,22 +957,22 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 11.5px;
+  font-size: 14px;
   font-weight: 800;
 }
 
 .ym-dock-menu {
-  min-height: 48px;
-  padding: 0 14px 0 12px;
+  min-height: 52px;
+  padding: 0 16px 0 14px;
   border: 0;
-  border-radius: 14px;
+  border-radius: 15px;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   flex: 0 0 auto;
   background: var(--ym-yellow);
   color: var(--ym-ink);
-  font-size: 10.5px;
+  font-size: 13px;
   font-weight: 800;
   transition:
     background 180ms ease,
@@ -984,8 +988,8 @@
 }
 
 .ym-dock-menu svg {
-  width: 15px;
-  height: 15px;
+  width: 17px;
+  height: 17px;
   stroke-width: 2.2;
 }
 
@@ -1024,9 +1028,9 @@
   position: relative;
   z-index: 1;
   width: 100%;
-  max-height: 89%;
-  padding: 8px 16px calc(15px + env(safe-area-inset-bottom, 0px));
-  border-radius: 27px 27px 0 0;
+  max-height: 91%;
+  padding: 10px 18px calc(18px + env(safe-area-inset-bottom, 0px));
+  border-radius: 30px 30px 0 0;
   overflow-y: auto;
   overscroll-behavior: contain;
   background: var(--ym-ink);
@@ -1063,17 +1067,17 @@
 .ym-sheet-kicker {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  color: rgba(255, 255, 255, 0.52);
-  font-size: 8px;
+  gap: 7px;
+  color: rgba(255, 255, 255, 0.56);
+  font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
 .ym-close {
-  width: 33px;
-  height: 33px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   border: 0;
   border-radius: 50%;
@@ -1089,14 +1093,14 @@
 }
 
 .ym-close svg {
-  width: 15px;
-  height: 15px;
+  width: 18px;
+  height: 18px;
 }
 
 .ym-sheet h2 {
-  margin: 16px 0 4px;
+  margin: 18px 0 5px;
   color: var(--ym-white);
-  font-size: 31px;
+  font-size: 34px;
   font-weight: 500;
   letter-spacing: -0.075em;
   line-height: 0.95;
@@ -1104,27 +1108,27 @@
 
 .ym-sheet-sub {
   margin: 0;
-  color: rgba(255, 255, 255, 0.44);
-  font-size: 9.5px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
   line-height: 1.4;
 }
 
 .ym-nav {
-  margin-top: 15px;
+  margin-top: 18px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 7px;
+  gap: 8px;
 }
 
 .ym-tile {
-  min-height: 92px;
-  padding: 11px;
+  min-height: 108px;
+  padding: 14px;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
+  border-radius: 16px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 11px;
+  gap: 14px;
   background: #191917;
   color: var(--ym-white);
   text-align: left;
@@ -1161,8 +1165,8 @@
 }
 
 .ym-tile-icon {
-  width: 27px;
-  height: 27px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -1171,8 +1175,8 @@
 }
 
 .ym-tile-icon svg {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   stroke-width: 1.8;
 }
 
@@ -1182,9 +1186,9 @@
 }
 
 .ym-tile-arrow {
-  width: 13px;
-  height: 13px;
-  color: rgba(255, 255, 255, 0.34);
+  width: 15px;
+  height: 15px;
+  color: rgba(255, 255, 255, 0.38);
 }
 
 .ym-tile.is-active .ym-tile-arrow {
@@ -1197,14 +1201,14 @@
 }
 
 .ym-tile-copy strong {
-  font-size: 12.5px;
+  font-size: 15px;
   font-weight: 800;
   letter-spacing: -0.02em;
 }
 
 .ym-tile-copy small {
-  color: rgba(255, 255, 255, 0.45);
-  font-size: 8.5px;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 11px;
   font-weight: 600;
 }
 
@@ -1213,16 +1217,16 @@
 }
 
 .ym-create {
-  min-height: 51px;
-  margin-top: 9px;
-  padding: 0 13px;
-  border-radius: 14px;
+  min-height: 56px;
+  margin-top: 10px;
+  padding: 0 15px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 10px;
   background: var(--ym-yellow);
   color: var(--ym-ink);
-  font-size: 10.5px;
+  font-size: 14px;
   font-weight: 800;
 }
 
@@ -1231,8 +1235,8 @@
 }
 
 .ym-create-icon {
-  width: 27px;
-  height: 27px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -1241,19 +1245,19 @@
 }
 
 .ym-create-icon svg {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
 }
 
 .ym-create > svg {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   margin-left: auto;
 }
 
 .ym-sheet-foot {
-  margin-top: 12px;
-  padding-top: 11px;
+  margin-top: 14px;
+  padding-top: 13px;
   border-top: 1px solid rgba(255, 255, 255, 0.12);
   display: flex;
   align-items: center;
@@ -1265,14 +1269,14 @@
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 9px;
   color: var(--ym-white);
 }
 
 .ym-account > img,
 .ym-account > span:first-child {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   flex: 0 0 auto;
   display: grid;
@@ -1280,7 +1284,7 @@
   object-fit: cover;
   background: var(--ym-yellow);
   color: var(--ym-ink);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 800;
 }
 
@@ -1294,35 +1298,35 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 9.5px;
+  font-size: 13px;
   font-weight: 800;
 }
 
 .ym-account small {
-  color: rgba(255, 255, 255, 0.42);
-  font-size: 8px;
+  color: rgba(255, 255, 255, 0.48);
+  font-size: 10.5px;
 }
 
 .ym-account > svg {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   margin-left: 1px;
-  color: rgba(255, 255, 255, 0.36);
+  color: rgba(255, 255, 255, 0.4);
 }
 
 .ym-public {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   flex: 0 0 auto;
   color: var(--ym-yellow);
-  font-size: 8.5px;
+  font-size: 11.5px;
   font-weight: 800;
 }
 
 .ym-public svg {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
 }
 
 .ym-screen a:focus-visible,
@@ -1358,7 +1362,7 @@
 
   .ym-device-label,
   .ym-device-hint {
-    width: min(100%, 390px);
+    width: min(100%, 408px);
   }
 }
 
@@ -1421,63 +1425,217 @@
   }
 
   .ym-sheet {
-    max-height: 91%;
+    max-height: 92%;
   }
 }
 
 @media (max-width: 370px) {
+  .ym-greeting {
+    padding: 14px 14px 12px;
+  }
+
   .ym-greeting h1 {
     font-size: 34px;
   }
 
+  .ym-greeting-sub {
+    font-size: 12px;
+  }
+
+  .ym-metrics {
+    padding: 12px;
+  }
+
+  .ym-metrics h2 {
+    font-size: 20px;
+  }
+
+  .ym-sample {
+    padding: 4px 6px;
+    font-size: 8px;
+  }
+
+  .ym-metrics dl {
+    margin-top: 12px;
+  }
+
+  .ym-metrics dl > div {
+    min-height: 56px;
+  }
+
   .ym-hero h2 {
-    font-size: 28px;
+    font-size: 29px;
   }
 
   .ym-hero {
-    height: 270px;
+    height: 216px;
   }
 
   .ym-metrics dt {
-    font-size: 7px;
+    font-size: 9.5px;
   }
 
   .ym-metrics dd {
-    font-size: 23px;
+    font-size: 26px;
   }
 
   .ym-metrics dt svg {
     display: none;
   }
 
+  .ym-properties {
+    margin-top: 8px;
+    padding: 12px;
+  }
+
+  .ym-property {
+    min-height: 68px;
+    padding: 8px 0;
+  }
+
   .ym-property-price {
-    font-size: 8px;
+    font-size: 11px;
   }
 
   .ym-sheet {
-    padding-right: 13px;
-    padding-left: 13px;
+    padding-right: 14px;
+    padding-left: 14px;
   }
 
   .ym-sheet h2 {
-    font-size: 28px;
+    font-size: 30px;
   }
 
   .ym-tile {
-    min-height: 88px;
-    padding: 10px;
+    min-height: 100px;
+    padding: 12px;
   }
 
   .ym-tile-copy strong {
-    font-size: 11.5px;
+    font-size: 14px;
+  }
+
+  .ym-tile-copy small {
+    font-size: 10px;
   }
 
   .ym-account strong {
-    max-width: 100px;
+    max-width: 120px;
   }
 
   .ym-public {
-    font-size: 8px;
+    font-size: 10.5px;
+  }
+}
+
+/* Telas curtas (320 × 720 / 360 × 720): mantém a primeira linha do
+   portfólio inteira acima do dock, em vez de exibir um cartão cortado. */
+@media (max-width: 370px) and (max-height: 760px) {
+  .ym-greeting {
+    padding: 12px 14px 10px;
+  }
+
+  .ym-date {
+    margin-bottom: 6px;
+    font-size: 9px;
+  }
+
+  .ym-greeting h1 {
+    font-size: 31px;
+  }
+
+  .ym-greeting-sub {
+    margin-top: 8px;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .ym-hero {
+    height: 186px;
+  }
+
+  .ym-hero-top {
+    padding: 14px 14px 0;
+  }
+
+  .ym-hero-content {
+    padding: 14px;
+  }
+
+  .ym-hero h2 {
+    font-size: 28px;
+  }
+
+  .ym-metrics {
+    padding: 11px;
+  }
+
+  .ym-metrics h2 {
+    font-size: 19px;
+  }
+
+  .ym-metrics dl {
+    margin-top: 10px;
+  }
+
+  .ym-metrics dl > div {
+    min-height: 50px;
+  }
+
+  .ym-metrics dt {
+    font-size: 9px;
+  }
+
+  .ym-metrics dd {
+    font-size: 24px;
+  }
+
+  .ym-properties {
+    margin-top: 6px;
+    padding: 11px 11px 8px;
+  }
+
+  .ym-properties h2 {
+    font-size: 19px;
+  }
+
+  .ym-property-list {
+    margin-top: 10px;
+  }
+
+  .ym-property {
+    min-height: 60px;
+    padding: 4px 0;
+  }
+
+  .ym-property > img,
+  .ym-property-empty {
+    width: 46px;
+    height: 46px;
+  }
+
+  .ym-property-copy small {
+    font-size: 9px;
+  }
+
+  .ym-property-copy strong {
+    font-size: 13px;
+  }
+
+  .ym-property-meta em {
+    font-size: 9.5px;
+  }
+
+  .ym-property-price {
+    font-size: 10.5px;
+  }
+}
+
+/* Em notebooks de 1000 px o frame já ocupa a dobra; a dica abaixo dele
+   ficaria cortada. O controle "Menu" no topo continua visível. */
+@media (min-width: 761px) and (max-height: 1020px) {
+  .ym-device-hint {
+    display: none;
   }
 }
 

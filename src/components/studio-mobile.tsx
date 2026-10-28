@@ -202,7 +202,6 @@ export function StudioMobile({
                       height={21}
                     />
                   </Link>
-                  <span className="ym-appbar-stamp">Mockup</span>
                   <div className="ym-appbar-side">
                     <span className="ym-online">
                       <i aria-hidden="true" />
@@ -244,10 +243,6 @@ export function StudioMobile({
                   />
                   <div className="ym-hero-shade" aria-hidden="true" />
                   <div className="ym-hero-top">
-                    <span className="ym-live">
-                      <i aria-hidden="true" />
-                      No ar
-                    </span>
                     <span className="ym-handle">@{profile.slug}</span>
                   </div>
                   <div className="ym-hero-content">
@@ -305,7 +300,8 @@ export function StudioMobile({
                     </Link>
                   </header>
                   <div className="ym-property-list">
-                    {properties.map((property) => (
+                    {/* O painel destaca o primeiro imóvel; a lista completa fica em Ver todos. */}
+                    {properties.slice(0, 1).map((property) => (
                       <Link
                         key={property.id}
                         className="ym-property"
@@ -326,12 +322,14 @@ export function StudioMobile({
                             · {property.type}
                           </small>
                           <strong>{property.title}</strong>
-                          <em>
-                            {property.neighborhood} · {property.city}
-                          </em>
-                        </span>
-                        <span className="ym-property-price">
-                          {money(property.price)}
+                          <span className="ym-property-meta">
+                            <em>
+                              {property.neighborhood} · {property.city}
+                            </em>
+                            <span className="ym-property-price">
+                              {money(property.price)}
+                            </span>
+                          </span>
                         </span>
                       </Link>
                     ))}

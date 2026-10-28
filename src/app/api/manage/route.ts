@@ -1,4 +1,5 @@
 import { dataBackend, isDuplicate, store } from "@/lib/store";
+import { isSameOrigin } from "@/lib/request-origin";
 import { profileSchema, propertySchema } from "@/lib/validation";
 import { z } from "zod";
 export async function POST(req: Request) {
@@ -10,7 +11,7 @@ export async function POST(req: Request) {
       },
       { status: 503 },
     );
-  if (req.headers.get("origin") !== new URL(req.url).origin)
+  if (!isSameOrigin(req))
     return Response.json({ error: "Origem inválida" }, { status: 403 });
   const db = store();
   const user = await db.user();

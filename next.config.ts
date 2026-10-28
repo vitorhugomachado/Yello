@@ -2,6 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   devIndicators: false,
+  /* Permite abrir o ambiente de desenvolvimento pelo celular na rede local.
+     O Next bloqueia HMR e assets internos de origens que não sejam localhost. */
+  allowedDevOrigins: ["192.168.18.5"],
   async headers() {
     return [
       {

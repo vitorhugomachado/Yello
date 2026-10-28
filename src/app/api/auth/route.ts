@@ -1,4 +1,5 @@
 import { dataBackend, localMode, store } from "@/lib/store";
+import { isSameOrigin, requestOrigin } from "@/lib/request-origin";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
 import { slugSchema } from "@/lib/validation";
 import { z } from "zod";
@@ -11,14 +12,14 @@ export async function POST(req: Request) {
       },
       { status: 503 },
     );
-  if (req.headers.get("origin") !== new URL(req.url).origin)
+  if (!isSameOrigin(req))
     return Response.json({ error: "Origem inválida" }, { status: 403 });
   const limit = rateLimit(req, "auth", 20, 60_000);
   if (!limit.ok) return tooMany(limit.retryAfter);
   try {
     const { action, email, password, link, token } = await req.json();
     const db = store();
-    const origin = new URL(req.url).origin;
+    const origin = requestOrigin(req);
     let answer: { next?: string; message?: string; link?: string } = {};
     if (action === "logout") await db.signOut();
     else if (action === "reset") {
@@ -27,7 +28,13 @@ export async function POST(req: Request) {
       answer = { next: "/painel" };
     } else {
       z.string().email().parse(email);
-      if (action !== "recover") z.string().min(8).max(128).parse(password);
+      if (action !== "recover")
+        z.string()
+          /* O login aceita senhas já existentes, inclusive curtas; a regra de
+             8+ caracteres vale para criar e redefinir a senha. */
+          .min(action === "login" ? 1 : 8)
+          .max(128)
+          .parse(password);
       if (action === "signup") {
         const wanted = slugSchema.safeParse(link);
         if (wanted.success && !(await db.slugAvailable(wanted.data)))
