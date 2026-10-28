@@ -43,7 +43,6 @@ export function AuthForm({
           })) as { next?: string; message?: string; link?: string };
           if (out.next) {
             router.push(out.next);
-            router.refresh();
           } else {
             setMessage(
               out.message ||

@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   devIndicators: false,
   /* Permite abrir o ambiente de desenvolvimento pelo celular na rede local.
      O Next bloqueia HMR e assets internos de origens que não sejam localhost. */
-  allowedDevOrigins: ["192.168.18.5"],
+  allowedDevOrigins: ["192.168.18.5", "172.31.12.225"],
   async headers() {
     return [
       {

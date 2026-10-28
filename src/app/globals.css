@@ -4896,6 +4896,11 @@ svg {
 .app-shell .dash-grid {
   gap: 16px;
 }
+/* A prioridade móvel aparece acima da prévia; no desktop o painel já tem
+   contexto suficiente e o bloco fica fora do fluxo. */
+.app-shell .dash-priority {
+  display: none;
+}
 .app-shell .dash-section-head h2 {
   font-size: 21px;
   font-weight: 600;
@@ -5243,6 +5248,77 @@ svg {
   .app-shell .dashboard {
     gap: 13px;
   }
+  .app-shell .dash-priority {
+    min-width: 0;
+    padding: 13px 14px;
+    border: 1px solid var(--app-line);
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    background: var(--app-white);
+    color: var(--app-ink);
+    box-shadow: 0 8px 22px rgba(10, 10, 10, 0.06);
+  }
+  .app-shell .dash-priority.is-urgent {
+    border-color: var(--app-ink);
+    background: var(--app-ink);
+    color: #fff;
+  }
+  .app-shell .dash-priority-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    background: var(--app-yellow);
+    color: var(--app-ink);
+  }
+  .app-shell .dash-priority-icon svg {
+    width: 17px;
+    height: 17px;
+    stroke-width: 1.8;
+  }
+  .app-shell .dash-priority-copy {
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+    flex: 1 1 auto;
+  }
+  .app-shell .dash-priority-copy small {
+    color: var(--app-muted);
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .app-shell .dash-priority-copy strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+  }
+  .app-shell .dash-priority-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex: 0 0 auto;
+    color: var(--app-muted);
+    font-size: 10px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+  .app-shell .dash-priority-action svg {
+    width: 13px;
+    height: 13px;
+  }
+  .app-shell .dash-priority.is-urgent .dash-priority-copy small,
+  .app-shell .dash-priority.is-urgent .dash-priority-action {
+    color: rgba(255, 255, 255, 0.62);
+  }
   .app-shell .dash-card {
     padding: 18px;
     border-radius: 20px;
@@ -5337,8 +5413,9 @@ svg {
     background: var(--app-ink);
     box-shadow: 0 16px 38px rgba(10, 10, 10, 0.28);
   }
-  .app-dock-current {
+  .app-shell .app-dock-current {
     min-width: 0;
+    flex: 1 1 auto;
     display: flex;
     align-items: center;
     gap: 9px;
@@ -5376,7 +5453,38 @@ svg {
     font-size: 13px;
     font-weight: 800;
   }
+  .app-shell .app-dock-add {
+    width: 50px;
+    min-height: 50px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 15px;
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    background: #232320;
+    color: var(--app-yellow);
+    transition:
+      background 180ms ease,
+      border-color 180ms ease,
+      transform 180ms ease;
+  }
+  .app-dock-add:hover {
+    border-color: rgba(255, 255, 255, 0.26);
+    background: #2d2d29;
+  }
+  .app-dock-add:active {
+    transform: scale(0.96);
+  }
+  .app-dock-add svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2.2;
+  }
+  .app-dock-add:focus-visible {
+    outline-color: #fff;
+  }
   .app-dock-menu {
+    position: relative;
     min-height: 50px;
     padding: 0 16px 0 13px;
     border: 0;
@@ -5392,6 +5500,23 @@ svg {
     transition:
       background 180ms ease,
       transform 180ms ease;
+  }
+  .app-dock-badge {
+    position: absolute;
+    top: -5px;
+    right: -4px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border: 2px solid var(--app-ink);
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    background: var(--app-yellow);
+    color: var(--app-ink);
+    font-size: 8px;
+    font-weight: 900;
+    line-height: 1;
   }
   .app-dock-menu:hover {
     background: #ffe23d;
@@ -5470,8 +5595,8 @@ svg {
     background: var(--app-yellow);
   }
   .app-close {
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
     padding: 0;
     border: 0;
     border-radius: 50%;
@@ -5753,6 +5878,21 @@ svg {
   }
   .app-account strong {
     max-width: 120px;
+  }
+}
+
+@media (max-width: 360px) {
+  .dash-priority-action > span {
+    display: none;
+  }
+  .app-shell .app-dock-add {
+    width: 46px;
+    min-height: 46px;
+  }
+  .app-dock-menu {
+    min-height: 46px;
+    padding-right: 13px;
+    padding-left: 11px;
   }
 }
 

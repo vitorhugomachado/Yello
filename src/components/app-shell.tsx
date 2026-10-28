@@ -306,6 +306,13 @@ export function AppShell({
               <strong>{current.label}</strong>
             </span>
           </Link>
+          <Link
+            className="app-dock-add"
+            href="/painel/imoveis/novo"
+            aria-label="Cadastrar novo imóvel"
+          >
+            <Plus />
+          </Link>
           <button
             ref={triggerRef}
             type="button"
@@ -313,10 +320,20 @@ export function AppShell({
             aria-haspopup="dialog"
             aria-expanded={open}
             aria-controls="app-menu"
+            aria-label={
+              unread
+                ? `Abrir menu, ${unread} ${unread === 1 ? "contato novo" : "contatos novos"}`
+                : "Abrir menu"
+            }
             onClick={() => setOpen(true)}
           >
             <Menu />
             Menu
+            {unread > 0 && (
+              <span className="app-dock-badge" aria-hidden="true">
+                {unread > 9 ? "9+" : unread}
+              </span>
+            )}
           </button>
         </nav>
 

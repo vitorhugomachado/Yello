@@ -69,6 +69,39 @@ export function Dashboard({
       </header>
 
       <div className="dashboard">
+        {unreadLeads > 0 ? (
+          <Link className="dash-priority is-urgent" href="/painel/contatos">
+            <span className="dash-priority-icon">
+              <Inbox />
+            </span>
+            <span className="dash-priority-copy">
+              <small>Contatos</small>
+              <strong>
+                {unreadLeads === 1
+                  ? "Uma mensagem nova"
+                  : `${unreadLeads} mensagens novas`}
+              </strong>
+            </span>
+            <span className="dash-priority-action">
+              <span>Responder</span>
+              <ArrowRight />
+            </span>
+          </Link>
+        ) : setup.next ? (
+          <Link className="dash-priority" href={setup.next.href}>
+            <span className="dash-priority-icon">
+              <Plus />
+            </span>
+            <span className="dash-priority-copy">
+              <small>Próximo passo</small>
+              <strong>{setup.next.title}</strong>
+            </span>
+            <span className="dash-priority-action">
+              <span>{setup.next.action}</span>
+              <ArrowRight />
+            </span>
+          </Link>
+        ) : null}
         <section className="dash-card dash-preview">
           <div className="dash-preview-media">
             {profile?.cover ? (
