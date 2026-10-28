@@ -17,6 +17,7 @@ export function LeadsInbox({
   const [leads, setLeads] = useState(initial);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const propertyName = (id: string | null) =>
     properties.find((property) => property.id === id)?.title ||
     "Contato pela sua página";
@@ -29,6 +30,7 @@ export function LeadsInbox({
       return;
     setBusy(id + action);
     setError("");
+    setNotice("");
     try {
       await api("/api/leads/manage", { action, id });
       if (action === "delete")
@@ -41,6 +43,11 @@ export function LeadsInbox({
               : lead,
           ),
         );
+      setNotice(
+        action === "delete"
+          ? "Mensagem excluída."
+          : "Mensagem marcada como lida.",
+      );
       router.refresh();
     } catch (e) {
       setError((e as Error).message);
@@ -73,6 +80,11 @@ export function LeadsInbox({
       {error && (
         <p className="notice error" role="alert">
           {error}
+        </p>
+      )}
+      {notice && (
+        <p className="notice" role="status">
+          {notice}
         </p>
       )}
       <ul className="inbox-list">
@@ -110,7 +122,7 @@ export function LeadsInbox({
                   onClick={() => act(lead.id, "read")}
                 >
                   <Check />
-                  Marcar como lida
+                  {busy === lead.id + "read" ? "Marcando…" : "Marcar como lida"}
                 </button>
               )}
               <button
@@ -120,7 +132,7 @@ export function LeadsInbox({
                 aria-label={`Excluir mensagem de ${lead.name}`}
               >
                 <Trash2 />
-                Excluir
+                {busy === lead.id + "delete" ? "Excluindo…" : "Excluir"}
               </button>
             </footer>
           </li>

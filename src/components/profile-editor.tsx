@@ -1,14 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  ArrowLeft,
-  ArrowUp,
-  ArrowDown,
-  Eye,
-  Save,
-  Trash2,
-} from "lucide-react";
+import { ArrowLeft, ArrowUp, ArrowDown, Eye, Save, Trash2 } from "lucide-react";
 import { Profile, networks, profileSchema } from "@/lib/validation";
 import { api, Share } from "./ui";
 import { Storefront } from "./storefront";
@@ -40,12 +33,30 @@ export function ProfileEditor({
         },
   );
   const [busy, setBusy] = useState(false),
+    [dirty, setDirty] = useState(false),
     [message, setMessage] = useState(""),
     [error, setError] = useState(""),
     [preview, setPreview] = useState(false),
     [savedSlug, setSavedSlug] = useState(initial?.slug || "");
+  useEffect(() => {
+    const shell = document.querySelector(".app-shell");
+    if (!shell) return;
+    shell.classList.add("has-editor-savebar");
+    return () => shell.classList.remove("has-editor-savebar");
+  }, []);
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
   function field(key: keyof Profile, value: unknown) {
     setP({ ...p, [key]: value });
+    setDirty(true);
+    setError("");
     setMessage("");
   }
   async function upload(file: File, key: "avatar" | "cover") {
@@ -61,6 +72,7 @@ export function ProfileEditor({
       const result = await response.json();
       if (!response.ok) throw Error(result.error);
       setP((current) => ({ ...current, [key]: result.data.path }));
+      setDirty(true);
       setMessage("Foto enviada. Salve sua página para aplicar.");
     } catch (e) {
       setError((e as Error).message);
@@ -68,6 +80,17 @@ export function ProfileEditor({
       setBusy(false);
     }
   }
+  const savebarStatus = busy
+    ? "Aguarde…"
+    : error
+      ? "Revise os campos"
+      : dirty
+        ? "Não salvo"
+        : !savedSlug
+          ? "Rascunho"
+          : message
+            ? "Salvo"
+            : "Tudo em dia";
   return (
     <>
       <div className="page-title">
@@ -86,7 +109,9 @@ export function ProfileEditor({
         </Link>
       </div>
       <form
+        id="profile-form"
         className="stack"
+        aria-busy={busy}
         onSubmit={async (e) => {
           e.preventDefault();
           setBusy(true);
@@ -100,6 +125,7 @@ export function ProfileEditor({
               );
             await api("/api/manage", { action: "profile", payload: p });
             setSavedSlug(p.slug);
+            setDirty(false);
             setMessage("Sua página foi salva!");
           } catch (e) {
             setError((e as Error).message);
@@ -316,7 +342,7 @@ export function ProfileEditor({
             {message}
           </div>
         )}
-        <div className="row">
+        <div className="row profile-actions">
           <button className="btn primary" disabled={busy}>
             <Save />
             {busy ? "Salvando…" : "Salvar minha página"}
@@ -331,6 +357,28 @@ export function ProfileEditor({
           </button>
         </div>
       </form>
+      <div
+        className="editor-savebar"
+        role="region"
+        aria-label="Salvar minha página"
+        aria-busy={busy}
+      >
+        <span className="editor-savebar-state" aria-live="polite">
+          <i aria-hidden="true" />
+          {savebarStatus}
+        </span>
+        <div className="editor-savebar-actions">
+          <button
+            className="btn primary"
+            type="submit"
+            form="profile-form"
+            disabled={busy}
+          >
+            <Save />
+            {busy ? "Salvando…" : "Salvar"}
+          </button>
+        </div>
+      </div>
       {savedSlug && (
         <div className="row" style={{ marginTop: 20 }}>
           <Link className="btn" href={`/${savedSlug}`} target="_blank">

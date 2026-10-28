@@ -111,19 +111,23 @@ export function AppShell({
       Icon: LayoutGrid,
     },
     {
+      id: "contatos",
+      href: "/painel/contatos",
+      label: "Contatos",
+      hint: unread
+        ? unread === 1
+          ? "1 nova"
+          : `${unread > 9 ? "9+" : unread} novas`
+        : "Mensagens",
+      Icon: Inbox,
+      badge: unread,
+    },
+    {
       id: "perfil",
       href: "/painel/perfil",
       label: "Minha página",
       hint: "Sua vitrine",
       Icon: PanelTop,
-    },
-    {
-      id: "contatos",
-      href: "/painel/contatos",
-      label: "Contatos",
-      hint: unread ? `${unread > 9 ? "9+" : unread} novas` : "Mensagens",
-      Icon: Inbox,
-      badge: unread,
     },
   ];
 

@@ -1103,6 +1103,9 @@ svg {
   gap: 12px;
   margin-top: 24px;
 }
+.editor-savebar {
+  display: none;
+}
 .publish-button.btn {
   background: #202421;
   border: 0;
@@ -5396,6 +5399,70 @@ svg {
   .app-shell .editor-head-actions .btn {
     padding: 8px 10px;
     font-size: 11px;
+  }
+  /* Enquanto os campos estão abertos, a barra global dá lugar à ação de
+     concluir. O polegar não precisa percorrer a página inteira para salvar. */
+  .app-shell.has-editor-savebar .app-dock {
+    display: none;
+  }
+  .app-shell.has-editor-savebar .editor-actions,
+  .app-shell.has-editor-savebar .profile-actions {
+    display: none;
+  }
+  .app-shell .editor-savebar {
+    position: fixed;
+    right: 12px;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    left: 12px;
+    z-index: 60;
+    min-height: 62px;
+    padding: 8px 9px 8px 13px;
+    border: 1px solid var(--app-line);
+    border-radius: 19px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 16px 38px rgba(10, 10, 10, 0.2);
+    backdrop-filter: blur(14px);
+  }
+  .app-shell .editor-savebar-state {
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1 1 auto;
+    overflow: hidden;
+    color: var(--app-muted);
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .app-shell .editor-savebar-state i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex: 0 0 auto;
+    background: var(--app-yellow);
+  }
+  .app-shell .editor-savebar-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 0 0 auto;
+  }
+  .app-shell .editor-savebar .btn {
+    min-height: 44px;
+    padding: 0 12px;
+    border-radius: 12px;
+    font-size: 11px;
+  }
+  .app-shell .editor-savebar .btn.primary {
+    border-color: var(--app-ink);
+    background: var(--app-ink);
+    color: var(--app-yellow);
   }
   .app-dock {
     position: fixed;

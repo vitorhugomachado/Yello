@@ -210,10 +210,12 @@ export function Dashboard({
                   ? `Próximo passo: ${setup.next.title.toLowerCase()}.`
                   : "Escolha por onde continuar."}
             </p>
-            <SetupChecklist
-              steps={setup.steps}
-              nextId={setup.next?.id ?? null}
-            />
+            {!setup.complete && (
+              <SetupChecklist
+                steps={setup.steps}
+                nextId={setup.next?.id ?? null}
+              />
+            )}
           </section>
 
           <section className="dash-card dash-properties">

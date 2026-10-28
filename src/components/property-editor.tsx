@@ -130,6 +130,7 @@ export function PropertyEditor({
     [fieldError, setFieldError] = useState(""),
     [errors, setErrors] = useState<Partial<Record<FieldKey, string>>>({}),
     [busy, setBusy] = useState(false),
+    [dirty, setDirty] = useState(false),
     [message, setMessage] = useState(""),
     [error, setError] = useState(""),
     [publishedUrl, setPublishedUrl] = useState(""),
@@ -154,9 +155,25 @@ export function PropertyEditor({
       document.body.style.overflow = previous;
     };
   }, [active, photosOpen]);
+  useEffect(() => {
+    const shell = document.querySelector(".app-shell");
+    if (!shell) return;
+    shell.classList.add("has-editor-savebar");
+    return () => shell.classList.remove("has-editor-savebar");
+  }, []);
+  useEffect(() => {
+    if (!dirty || demo) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty, demo]);
   function edit(key: FieldKey) {
     setDraft(String(p[key]));
     setFieldError("");
+    setError("");
     setActive(key);
   }
   function apply() {
@@ -175,6 +192,7 @@ export function PropertyEditor({
     }
     setP((current) => ({ ...current, [active]: parsed.data }));
     setErrors((current) => ({ ...current, [active]: undefined }));
+    setDirty(true);
     setMessage("");
     setActive(null);
   }
@@ -205,6 +223,7 @@ export function PropertyEditor({
         payload: parsed.data,
       });
       setP((current) => ({ ...current, ...parsed.data, id: result.data.id }));
+      setDirty(false);
       setMessage(
         status === "publicado"
           ? "Imóvel publicado na sua vitrine."
@@ -253,6 +272,19 @@ export function PropertyEditor({
       </section>
     );
   }
+  const primaryStatus =
+    p.status === "rascunho" ? ("publicado" as const) : p.status;
+  const savebarStatus = busy
+    ? "Salvando…"
+    : error
+      ? "Revise os campos"
+      : dirty
+        ? "Não salvo"
+        : !p.id
+          ? "Rascunho"
+          : message
+            ? "Salvo"
+            : "Tudo em dia";
   return (
     <div className="property-editor">
       {demo && (
@@ -394,6 +426,43 @@ export function PropertyEditor({
           {demo ? "Nenhuma alteração será publicada." : "Salve antes de sair."}
         </small>
       </div>
+      {!demo && (
+        <div
+          className="editor-savebar"
+          role="region"
+          aria-label="Salvar imóvel"
+          aria-busy={busy}
+        >
+          <span className="editor-savebar-state" aria-live="polite">
+            <i aria-hidden="true" />
+            {savebarStatus}
+          </span>
+          <div className="editor-savebar-actions">
+            {p.status === "rascunho" && (
+              <button
+                type="button"
+                className="btn"
+                disabled={busy}
+                onClick={() => save("rascunho")}
+              >
+                Salvar rascunho
+              </button>
+            )}
+            <button
+              type="button"
+              className="btn primary"
+              disabled={busy}
+              onClick={() => save(primaryStatus)}
+            >
+              {busy
+                ? "Salvando…"
+                : p.status === "rascunho"
+                  ? "Publicar"
+                  : "Salvar"}
+            </button>
+          </div>
+        </div>
+      )}
       <dialog
         ref={dialog}
         aria-label={active ? fields[active].label : "Editar informação"}
@@ -525,7 +594,10 @@ export function PropertyEditor({
           <PhotoManager
             propertyId={p.id}
             photos={p.images}
-            onChange={(images) => setP((current) => ({ ...current, images }))}
+            onChange={(images) => {
+              setP((current) => ({ ...current, images }));
+              setDirty(true);
+            }}
             demo={demo}
           />
         ) : (
